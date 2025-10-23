@@ -1,0 +1,10 @@
+<circle class="venn_diagram_db2_all" cx="670" cy="210" r="205" />
+
+<text class="venn_diagram_count" x="800" y="210">
+    {{ "{:,}".format(total_count - set_count) }}
+</text>
+
+<text class="venn_diagram_percent" x="785" y="240">
+    {{ '%.2f' % ((total_count - set_count) / total_count * 100) }}
+    %
+</text>

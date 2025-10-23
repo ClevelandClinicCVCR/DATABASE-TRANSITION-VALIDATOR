@@ -1,0 +1,121 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+database_setting:
+  source_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    name: "MS_SQL_Server_PROD"
+    schema: "dbo" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    name: "MS_SQL_Server_DEV"
+    schema: "PYTHIA_CORE" # DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata). MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server)
+
+table_mappings:
+  - source_table: "PYTHIA_NGS_SNV"
+    group: "SNV"
+    key_columns: ["HUGO_SYMBOL", "BIOMARKER_NAME", "NGS_NCBI_BUILD_NAME", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION_NAME", "CLASSIFICATION_DESCRIPTION","CLASSIFICATION_DISPLAY_ORDER", "TYPE_NAME","TYPE_DESCRIPTION", "TYPE_DISPLAY_ORDER", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE_1", "TUMOR_SEQ_ALLELE_2", "DBSNP_RS", "HGVSC", "HGVSP_SHORT", "EXON_NUMBER", "T_REF_COUNT", "T_ALT_COUNT","REFSEQ", "VARIANT_ALLELE_FREQUENCY","MHCLASS","SOURCE_VARIANT_CLASSIFICATION","GENOTYPE","HLA_GENOTYPE", "IS_INHERITED", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE", "IS_WILD_TYPE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+    rule_based_data_validation:
+      HUGO_SYMBOL:
+        pattern: "^(?=.{2,13}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 13 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: true # can be null
+      IS_WILD_TYPE:
+        pattern: "^(?i)(1|0|true|false|yes|no)?$" # Accepts null, 1, 0, True, False, Yes, or No (case-insensitive)
+        pattern_regex_description: "Accepts null, 1, 0, True, False, Yes, or No (case-insensitive)"
+      VARIANT_ALLELE_FREQUENCY:
+        pattern: "^(0(\\.\\d+)?|1(\\.0+)?)$"
+        pattern_regex_description: "fractional values between 0 and 1, optionally with decimals (e.g., 0, 0.3, 0.75, 1, 1.0)"
+        nullable: true # can be null
+
+  # - source_table: "PYTHIA_NGS_IHC"
+  #   group: "IHC"
+  #   key_columns: ["PROTEIN_ALIAS_HUGO_SYMBOL", "PROTEIN_ALIAS_NAME", "BIOMARKER_NAME", "NGS_IHC_RESULT_NAME", "INTENSITY", "PERCENT"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     PERCENT:
+  #       pattern: "^(100(\\.0+)?|[0-9]{1,2}(\\.[0-9]+)?)$"
+  #       pattern_regex_description: "numeric values between 0 and 100 (inclusive), allowing optional decimals (like 32.5, 0.7, 100, etc.)"
+  #       nullable: true # can be null
+  #     INTENSITY:
+  #       pattern: "^[0-6]\\s*\\+?$"
+  #       pattern_regex_description: "Accepts null, 0, 1+, 2+, 3+, 4+, 5+, 6+"
+  #       nullable: true # can be null
+  #   number_of_set_sample_records_for_detailed_report: 20
+
+  # - source_table: "PYTHIA_NGS_IHC"
+  #   group: "IHC"
+  #   key_columns: ["PROTEIN_ALIAS_HUGO_SYMBOL", "PROTEIN_ALIAS_NAME", "BIOMARKER_NAME", "NGS_IHC_RESULT_NAME", "INTENSITY", "PERCENT"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     PERCENT:
+  #       pattern: "^(100(\\.0+)?|[0-9]{1,2}(\\.[0-9]+)?)$"
+  #       pattern_regex_description: "numeric values between 0 and 100 (inclusive), allowing optional decimals (like 32.5, 0.7, 100, etc.)"
+  #       nullable: true # can be null
+  #   number_of_set_sample_records_for_detailed_report: 20
+
+  # - source_table: "PYTHIA_NGS_CNV"
+  #   group: "CNV"
+  #   key_columns: ["HUGO_SYMBOL", "BIOMARKER_NAME", "NGS_CNV_RESULT_NAME", "NUMERIC_VALUE"]
+  #   data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+  #   rule_based_data_validation:
+  #     HUGO_SYMBOL:
+  #       pattern: "^(?=.{2,13}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+  #       pattern_regex_description: "between 2 and 13 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+  #       nullable: true # can be null
+
+  #     NUMERIC_VALUE:
+  #       # min_value: 0.0  # CNV values should be non-negative
+  #       # max_value: 100.0  # Assuming a reasonable upper limit for CNV values
+  #       pattern: "^\\d+(\\.\\d+)?$"
+  #       nullable: true # can be null
+
+  #     BIOMARKER_NAME:
+  #       pattern: "^(?=.{2,13}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # BIOMARKER_NAME follows HUGO-like gene conventions e.g., EBER, TP53, BRCA1, EGFR
+  #       pattern_regex_description: "between 2 and 13 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+  #       nullable: true # can be null
+
+  # - source_table: "PYTHIA_ICD_O_SITE"
+  #   key_columns: ["SITE_CODE", "DESCRIPTION"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     SITE_CODE:
+  #       pattern: "^C\\d{2}\\.\\d$"  # e.g., CXX.X, such as C50.9 for breast site
+
+  # - source_table: "PYTHIA_ICD_O_SITE_PREFIX"
+  #   key_columns: ["SITE_CODE_PREFIX", "DESCRIPTION"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     SITE_CODE_PREFIX:
+  #       pattern: "^C\\d{2}$"  # e.g., CXX, such as C50 for breast cancer
+  #       pattern_regex_description: "Starts with 'C' followed by two digits (e.g., C50 for breast cancer)"
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 4
+
+  # Sample size for data validation (null or 0 = all data)
+  sample_size: null
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_data_validation: true
+  enable_rule_based_data_validation: true
+  enable_constraint_validation: false  # Future feature
+
+  # Timeout settings (seconds)
+  query_timeout: 300
+  connection_timeout: 30

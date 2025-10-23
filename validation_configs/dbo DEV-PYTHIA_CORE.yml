@@ -1,0 +1,112 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+# from (DEV) dbo to (DEV) PYTHIA_CORE.
+database_setting:
+  source_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    index: 0 # Index (start from 0) of the database type in database_credentials_local.yml. Null or -1 means don't use index value, use name instead.
+    name: "MS_SQL_Server_DEV" # If index is null or -1, use name to identify the database credentials in database_credentials_local.yml
+    # if both index and name are provided, index will be used.
+    # if none of index and name is provided, the first entry (index 0) will be used.
+    schema: "dbo" # DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata). MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    index: 0 # Index (start from 0) of the database type in database_credentials_local.yml. Null or -1 means don't use index value, use name instead.
+    name: "MS_SQL_Server_DEV" # If index is null or -1, use name to identify the database credentials in database_credentials_local.yml
+    # if none of index and name is provided, the first entry (index 0) will be used.
+    schema: "PYTHIA_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+table_mappings:
+  # Patient Tables
+  - source_table: "PYTHIA_CANCER_DIAGNOSIS"
+    target_table: "PYTHIA_CANCER_DIAGNOSIS"
+
+  - source_table: "PYTHIA_CBIOPORTAL_IDENTIFIER"
+  - source_table: "PYTHIA_CBIOPORTAL_STUDY"
+  - source_table: "PYTHIA_ICD_O_MORPHOLOGY"
+    key_columns: ["MORPHOLOGY_CODE", "BEHAVIOR_CODE", "DESCRIPTION"]
+
+  - source_table: "PYTHIA_ICD_O_SITE"
+    key_columns: ["SITE_CODE", "DESCRIPTION"]
+
+  - source_table: "PYTHIA_ICD_O_SITE_PREFIX"
+    key_columns: ["SITE_CODE_PREFIX", "DESCRIPTION"]
+
+  - source_table: "PYTHIA_NGS_CNV"
+    key_columns: ["HUGO_SYMBOL", "NGS_CNV_RESULT_NAME", "NUMERIC_VALUE", "BIOMARKER_NAME"]
+
+  - source_table: "PYTHIA_NGS_FUSION"
+    key_columns: ["DESCRIPTION"]
+
+  - source_table: "PYTHIA_NGS_FUSION_GENE"
+    key_columns: ["HUGO_SYMBOL", "GENE_ORDER", "EXON_NUMBER", "REFSEQ", "CHROMOSOME", "START_POSITION", "STRAND"]
+
+  - source_table: "PYTHIA_NGS_GLOBAL_ALTERATION"
+    key_columns: ["NGS_GLOBAL_ALTERATION_TYPE_NAME", "ASSAY_RESULT", "NUMERIC_VALUE"]
+
+  - source_table: "PYTHIA_NGS_IHC"
+    key_columns: ["PROTEIN_ALIAS_HUGO_SYMBOL", "PROTEIN_ALIAS_NAME", "NGS_IHC_RESULT_NAME", "INTENSITY", "PERCENT", "BIOMARKER_NAME"]
+
+  - source_table: "PYTHIA_NGS_SNV"
+    key_columns: ["HUGO_SYMBOL", "NGS_NCBI_BUILD_NAME", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION_NAME", "TYPE_NAME", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE_1", "TUMOR_SEQ_ALLELE_2", "HGVSC", "HGVSP_SHORT", "EXON_NUMBER", "T_REF_COUNT", "T_ALT_COUNT", "VARIANT_ALLELE_FREQUENCY", "IS_INHERITED", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE", "IS_WILD_TYPE", "BIOMARKER_NAME"]
+
+  - source_table: "PYTHIA_NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER", "IS_QNS"]
+
+  - source_table: "PYTHIA_PANEL"
+    key_columns: ["CODE", "NAME"]
+
+  - source_table: "PYTHIA_PANEL_VERSION"
+    key_columns: ["VERSION"]
+
+  - source_table: "PYTHIA_PATHOLOGY_CASE"
+    key_columns: ["CASE_NUMBER"]
+
+  - source_table: "PYTHIA_PATIENT"
+    key_columns: ["PAT_ID", "PAT_MRN_ID", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "SEX_ASSIGNED_AT_BIRTH", "PATIENT_VITAL_STATUS_NAME", "RACE_NAME", "ETHNICITY_NAME", "STATE", "LAST_ENCOUNTER_DATE", "GENDER"]
+
+  - source_table: "PYTHIA_PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["CANCER_DIAGNOSIS_SOURCE_NAME"]
+
+  - source_table: "PYTHIA_PATIENT_CLINICAL_CANCER_STAGE"
+    key_columns: ["CANCER_STAGE_NAME"]
+
+  - source_table: "PYTHIA_PATIENT_ECOG_PERFORMANCE_STATUS"
+    key_columns: ["ECOG_PERFORMANCE_STATUS_GRADE"]
+
+  - source_table: "PYTHIA_PATIENT_LAB_RESULT"
+    key_columns: ["LAB_RESULT_NAME", "RESULT_VALUE", "RESULT_TIMESTAMP"]
+
+  - source_table: "PYTHIA_PATIENT_PATHOLOGICAL_CANCER_STAGE"
+    key_columns: ["CANCER_STAGE_NAME"]
+
+  - source_table: "PYTHIA_PATIENT_TREATMENT"
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports/(DEV)dbo-(DEV)PYTHIA_CORE"
+
+  # Maximum number of parallel workers
+  max_workers: 4
+
+  # Sample size for data validation (null or 0 = all data)
+  sample_size: null
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_data_validation: true
+  enable_constraint_validation: false  # Future feature
+
+  # Timeout settings (seconds)
+  query_timeout: 300
+  connection_timeout: 30

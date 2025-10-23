@@ -1,0 +1,43 @@
+<div class="venn_diagram_wrap">
+    <div class="venn_diagram_card" role="img" aria-label="Venn diagram">
+        <!-- SVG Venn diagram -->
+        <svg viewBox="0 0 900 420" role="presentation" aria-hidden="false" class="venn_diagram_svg">
+            <!-- left ellipse (DB1 All) -->
+            <!-- <ellipse class="venn_diagram_db1_all" cx="290" cy="210" rx="250" ry="200" /> -->
+            <!-- Count DB1 All only -->
+            <!-- <text class="venn_diagram_count" x="110" y="210">60</text>
+        <text class="venn_diagram_percent" x="95" y="240">60%</text> -->
+            <!-- right ellipse (DB2 All) -->
+            <!-- <ellipse class="venn_diagram_db2_all" cx="590" cy="210" rx="270" ry="209" /> -->
+            <!-- Count DB2 All only -->
+            <!-- <text class="venn_diagram_count" x="800" y="210">70</text>
+        <text class="venn_diagram_percent" x="790" y="240">70%</text> -->
+            <ellipse class="venn_diagram_set1" cx="440" cy="210" rx="240" ry="209" />
+            <ellipse class="venn_diagram_set2" cx="545" cy="210" rx="130" ry="160" />
+
+            <!-- counts -->
+            <!-- Set 1 only -->
+            <text class="venn_diagram_count" x="310" y="210">
+                {{ "{:,}".format(set1_value - set2_value) }}
+            </text>
+            <text class="venn_diagram_percent" x="295" y="240">
+                {{ '%.2f' % ((set1_value - set2_value) / set1_value * 100) }}
+                %
+            </text>
+            <!-- Set 2 only -->
+            <text class="venn_diagram_count" x="550" y="210">
+                {{ "{:,}".format(set2_value) }}
+            </text>
+
+
+            <!-- Labels under each circle -->
+            <text class="venn_diagram_label" x="340" y="330">
+                {{ set1_label }}
+            </text>
+
+            <text class="venn_diagram_label" x="550" y="300">
+                {{ set2_label }}
+            </text>
+        </svg>
+    </div>
+</div>

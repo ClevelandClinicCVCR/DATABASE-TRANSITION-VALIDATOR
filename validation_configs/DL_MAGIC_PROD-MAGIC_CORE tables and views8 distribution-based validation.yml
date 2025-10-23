@@ -1,0 +1,1453 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+# from Teradata to MS SQL Server.
+database_setting:
+  source_database:
+    type: "Teradata" # Teradata, MS_SQL_Server
+    name: "Teradata" # If index is null or -1, use name to identify the database credentials in database_credentials_local.yml
+    schema: "DL_MAGIC_PROD" # DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata). MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    name: "MS_SQL_Server_DEV"
+    schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+table_mappings:
+  # Patient Tables
+  - source_table: "PATIENT"
+    group: "PATIENT"
+    key_columns: ["PAT_ID", "PAT_MRN_ID", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      PAT_ID:
+        pattern: "^(?=.{8,12}$)(?:\\d+|[0-9]+[ZM][0-9]+)$"  # e.g., 12345678, 123456789012, 12345Z67890
+        pattern_regex_description: "IDs that are either all digits or digits containing a single 'Z' or 'M' in the middle, and are 8 to 12 characters long"
+        nullable: false # cannot be null
+        unique: true # must be unique
+      PAT_MRN_ID:
+        pattern: "^\\d{8}$"  # e.g., 12345678
+        pattern_regex_description: "8-digit numeric IDs — no letters, no special characters, and no spaces"
+        nullable: false # cannot be null
+        unique: true # must be unique
+      FIRST_NAME:
+        pattern: "^(?=.{1,35}$)(?:[A-Z](?:[a-z]+|\\.)?)(?:\\s[A-Z](?:[a-z]+|\\.)?)*$"  # e.g., John
+        pattern_regex_description: "Names must start with an uppercase letter and be 1 to 35 characters long, containing only letters. Accept multi-part first names like Mary Ann. (Allows 1-character name parts, full names, and initials)"
+        nullable: false # cannot be null
+      LAST_NAME:
+        pattern: "^(?=.{2,40}$)([A-ZÁÉÍÓÚÑÇÄÖÜ][a-záéíóúñçäöü]*)?(?:[-\\s][A-ZÁÉÍÓÚÑÇÄÖÜ][a-záéíóúñçäöü]*)*$"  # e.g., O'Connor, Smith-Jones
+        pattern_regex_description: "Length between 2 and 40 characters. One capital letter followed by one or more lowercase letters (e.g., Smith). Allows additional capitalized parts separated by a space or a hyphen (e.g., Apodaca Joffe). Short first segments like D. names like 'Quesada Lárez' introduce accented (Unicode) letters such as á, é, í, ó, ú, ñ, ç, ä, etc."
+        nullable: false # cannot be null
+      DATE_OF_BIRTH:
+        pattern: "^(?:(?:19(?:0[8-9]|[1-9][0-9])|20[0-4][0-9])-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8]))|(?:(?:19(?:0[8-9]|[1-9][0-9])|20[0-4][0-9])-02-29))$"  # e.g., 1980-05-15
+        pattern_regex_description: "Date in the format YYYY-MM-DD. Only accept dates from 1908 onward. Reject invalid days for specific months (like February 30): Months with 31 days: Jan, Mar, May, Jul, Aug, Oct, Dec. Months with 30 days: Apr, Jun, Sep, Nov. February (non-leap): 1-28. February leap day: 02-29 → only allowed for leap years"
+        nullable: false # cannot be null
+
+  - source_table: "PATIENT_V"
+    group: "PATIENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "VITAL_STATUS", "SEX_ASSIGNED_AT_BIRTH", "RACE", "ETHNICITY", "ECOG_PERFORMANCE_STATUS"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      VITAL_STATUS:
+        pattern: "^(Alive|Deceased)$"  # e.g., Alive, Deceased
+        pattern_regex_description: "Valid values are 'Alive' or 'Deceased'"
+        nullable: false # cannot be null
+      SEX_ASSIGNED_AT_BIRTH:
+        pattern: "^(Male|Female|Choose not to disclose|Uncertain|Unknown)$"  # e.g., Male, Female, Choose not to disclose, Uncertain or Unknown
+        pattern_regex_description: "Valid values are 'Male', 'Female', 'Choose not to disclose', 'Uncertain', or 'Unknown'"
+        nullable: true # can be null
+      RACE:
+        pattern: "^(Unavailable|Black|White|Multiracial/Multicultural|Hispanic/Latino|Middle Eastern or North African|Asian|Native Hawaiian/Pacific Islander|Other|American Indian/Alaska Native|Declined)$"
+        pattern_regex_description: "Allowed values: 'Unavailable', 'Black', 'White', 'Multiracial/Multicultural', 'Hispanic/Latino', 'Middle Eastern or North African', 'Asian', 'Native Hawaiian/Pacific Islander', 'Other', 'American Indian/Alaska Native', 'Declined'"
+        nullable: true # can be null
+      ETHNICITY:
+        pattern: "^(Unavailable|Not Hispanic|Hispanic|Declined|Caucasian)$"  # e.g., Hispanic, Not Hispanic, Unavailable, Declined, Caucasian
+        pattern_regex_description: "Valid values are 'Hispanic', 'Not Hispanic', 'Unavailable', 'Declined', 'Caucasian'"
+        nullable: true # can be null
+      ECOG_PERFORMANCE_STATUS:
+        pattern: "^(?:[0-5])$"
+        pattern_regex_description: "Valid values are 0, 1, 2, 3, 4, 5"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      VITAL_STATUS:
+        expected_distribution:
+          "Alive":
+            min_count: 1
+            min_percent: 60.0
+            # max_count: 1000000
+            # max_percent: 100.0
+          "Deceased":
+            min_count: 1
+            min_percent: 20.0
+      SEX_ASSIGNED_AT_BIRTH:
+        expected_distribution:
+          "Male":
+            min_count: 1
+            min_percent: 10.0
+          "Female":
+            min_count: 1
+            min_percent: 15.0
+      RACE:
+        expected_distribution:
+          "Black":
+            min_count: 1
+            min_percent: 10.0
+          "White":
+            min_count: 1
+            min_percent: 70.0
+          "Asian":
+            min_count: 1
+            min_percent: 1.0
+      ETHNICITY:
+        expected_distribution:
+          "Hispanic":
+            min_count: 1
+            min_percent: 3.0
+          "Not Hispanic":
+            min_count: 1
+            min_percent: 80.0
+      ECOG_PERFORMANCE_STATUS:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 15.0
+          "1":
+            min_count: 1
+            min_percent: 15.0
+          "2":
+            min_count: 1
+            min_percent: 5.0
+          "3":
+            min_count: 1
+            min_percent: 3.0
+          "4":
+            min_count: 1
+          "5":
+            min_count: 1
+
+  - source_table: "PATIENT_CANCER_DIAGNOSIS"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["CONFIDENCE_PERCENTAGE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "PATIENT_CANCER_DIAGNOSIS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "VITAL_STATUS", "LAST_ENCOUNTER_DATE", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      LAST_ENCOUNTER_DATE:
+        pattern: "^(?:(?:(?:200[1-9]|20[1-9][0-9])-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))|(?:(?:2004|2008|2012|2016|2020|2024|20[1-9][0-9])-02-29))$"  # e.g., 2023-05-15
+        pattern_regex_description: "Date in the format YYYY-MM-DD. Only accept dates after 2000. Reject invalid days for specific months (like February 30): Months with 31 days: Jan, Mar, May, Jul, Aug, Oct, Dec. Months with 30 days: Apr, Jun, Sep, Nov. February (non-leap): 1-28. February leap day: 02-29 → only allowed for leap years"
+        nullable: true # can be null
+
+  - source_table: "PATIENT_CANCER_DIAGNOSIS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "PATIENT_CANCER_DIAGNOSIS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "ICD_O_SITE_CODE", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "CANCER_DIAGNOSIS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["SITE_CODE", "SITE_CODE_PREFIX", "MORPHOLOGY_CODE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "DIAGNOSIS_BREAST_CANCER_PATIENTS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "DIAGNOSIS_COLORECTAL_CANCER_PATIENTS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "DIAGNOSIS_GASTROINTESTINAL_CANCER_PATIENTS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "DIAGNOSIS_LUNG_CANCER_PATIENTS_V"
+    group: "PATIENT_CANCER_DIAGNOSIS"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "PATIENT_CLINICAL_CANCER_STAGE"
+    group: "PATIENT"
+
+  - source_table: "PATIENT_ECOG_PERFORMANCE_STATUS"
+    group: "PATIENT"
+    key_columns: ["ECOG_TIMESTAMP"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      ECOG_TIMESTAMP:
+        pattern: "^(?:(?:(?:200[1-9]|20[1-9][0-9])-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))|(?:(?:2004|2008|2012|2016|2020|2024|20[1-9][0-9])-02-29))(?: ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{1,3})?)?$"  # e.g., 2023-05-15 00:00:00.000
+        pattern_regex_description: "Date in the format YYYY-MM-DD 00:00:00.00. Allow: YYYY-MM-DD alone or YYYY-MM-DD HH:MM:SS (with optional milliseconds). Only accept dates after 2000. Reject invalid days for specific months (like February 30): Months with 31 days: Jan, Mar, May, Jul, Aug, Oct, Dec. Months with 30 days: Apr, Jun, Sep, Nov. February (non-leap): 1-28. February leap day: 02-29 → only allowed for leap years"
+        nullable: false # cannot be null
+
+  - source_table: "PATIENT_LAB_RESULT"
+    group: "PATIENT_LAB_RESULT"
+    key_columns: ["RESULT_VALUE", "RESULT_TIMESTAMP"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    number_of_set_sample_records_for_detailed_report: 10
+    rule_based_data_validation:
+      RESULT_TIMESTAMP:
+        pattern: "^(?:(?:(?:2000|200[1-9]|20[1-9][0-9])-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))|(?:(?:2000|2004|2008|2012|2016|2020|2024|20[1-9][0-9])-02-29)) ([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{1,3})?$"  # e.g., 2023-05-15 00:00:00.000
+        pattern_regex_description: "Date in the format YYYY-MM-DD 00:00:00.00. Allow: YYYY-MM-DD alone or YYYY-MM-DD HH:MM:SS (with optional milliseconds). Only accept dates from 2000. Reject invalid days for specific months (like February 30): Months with 31 days: Jan, Mar, May, Jul, Aug, Oct, Dec. Months with 30 days: Apr, Jun, Sep, Nov. February (non-leap): 1-28. February leap day: 02-29 → only allowed for leap years"
+        nullable: false # cannot be null
+      RESULT_VALUE:
+        pattern: "^\\d+(\\.\\d+)?$"  # e.g., 0, 1, 2, 0.3, 7.90, 0.42
+        pattern_regex_description: "Integers 0, 1, 2... or floats with decimal places: 0.3, 7.90, 0.42"
+        nullable: false # cannot be null
+
+  - source_table: "PATIENT_LAB_RESULT_V"
+    group: "PATIENT_LAB_RESULT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "LAB_NAME", "LAB_RESULT"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      LAB_NAME:
+        pattern: '^([A-Z ,]+)$' # AST
+        pattern_regex_description: "Names with uppercase letters, spaces, and commas"
+        nullable: false # cannot be null
+
+  - source_table: "PATIENT_PATHOLOGICAL_CANCER_STAGE"
+    group: "PATIENT"
+
+  - source_table: "PATIENT_TREATMENT"
+    group: "PATIENT_TREATMENT"
+    key_columns: ["START_TIMESTAMP", "END_TIMESTAMP"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "TREATMENT_EDV_TRANSLATION_V"
+    key_columns: ["MAGIC_TREATMENT_NAME", "ALTERNATE_TREATMENT_NAME", "EDV_TREATMENT_NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "PATIENT_TREATMENT_V"
+    group: "PATIENT_TREATMENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "TREATMENT", "TREATMENT_TYPE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    rule_based_data_validation:
+      TREATMENT:
+        pattern: '^[A-Z]{6,20}$'
+        pattern_regex_description: "Only uppercase letters, between 6 and 20 characters"
+        nullable: false # cannot be null
+      TREATMENT_TYPE:
+        pattern: '^(?:Chemotherapy|Targeted Therapy|Immunotherapy)(?:,\s*(?:Chemotherapy|Targeted Therapy|Immunotherapy))*$'
+        pattern_regex_description: "Valid treatment type: Chemotherapy|Targeted Therapy|Immunotherapy. Allows multiple treatment types separated by commas optionally followed by spaces (Chemotherapy, Targeted Therapy, Immunotherapy)"
+        nullable: false # cannot be null
+    distribution_based_data_validation:
+      TREATMENT_TYPE:
+        expected_distribution:
+          "Chemotherapy":
+            min_count: 1
+            min_percent: 70.0
+          "Targeted Therapy":
+            min_count: 1
+            min_percent: 5.0
+          "Immunotherapy":
+            min_count: 1
+            min_percent: 10.0
+
+  - source_table: "PATIENT_TREATMENT_V"
+    group: "PATIENT_TREATMENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "TREATMENT"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "PATIENT_TREATMENT_V"
+    group: "PATIENT_TREATMENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "PATIENT_TREATMENT_V"
+    group: "PATIENT_TREATMENT"
+    key_columns: ["PAT_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  # Trial Tables
+  - source_table: "TRIAL"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE"]
+    data_transformation_rules: ["normalize_null_nan"]
+    max_item_length_for_html_report: 200
+    max_word_length_for_html_report: 30
+    rule_based_data_validation:
+      NCT_ID:
+        pattern: '^NCT\d{8}$'
+        pattern_regex_description: "Starts with NCT. Followed by exactly 8 digits"
+        nullable: true # can be null
+        unique: true # must be unique
+      PRMC_ID:
+        pattern: '^[A-Z0-9]{2,8}(?:[ .-]?[A-Z0-9]{1,8}){0,6}$'
+        pattern_regex_description: "Required prefix of 2-8 letters/digits. Separate by space or period or hyphen. Up to 6 optional groups separated by a space or hyphen, each group 1-8 letters/digits."
+        nullable: true # can be null
+        unique: true # must be unique
+      TRIAL_TITLE:
+        pattern: '^.{20,1000}$'
+        pattern_regex_description: "Length between 20 and 1000 characters"
+        nullable: false # cannot be null
+        unique: true # must be unique
+
+  - source_table: "TRIAL_V"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE", "PHASES"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_AGE"
+    group: "TRIAL"
+    key_columns: ["AGE", "IS_NEGATION -> int", "WEIGHT"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_ARM"
+    group: "TRIAL"
+    key_columns: ["ARM_LABEL", "START_DATE", "END_DATE", "MAXIMUM_PARTICIPANTS", "ENROLLED_PARTICIPANTS", "COMMENTS"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "TRIAL_ARM_V"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "CCF_IRB_ID", "PRMC_ID", "TRIAL_TITLE", "STATUS"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_CANCER_DIAGNOSIS"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_CANCER_STAGE"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_CONTACT_V"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE", "FIRST_NAME", "LAST_NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_CONTACT_ASSIGNMENT"
+    group: "TRIAL"
+
+  - source_table: "TRIAL_ECOG_PERFORMANCE_STATUS"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_ETHNICITY"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_GENDER"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_INGEST_LOG"
+    group: "TRIAL"
+
+  - source_table: "TRIAL_INGEST_LOG_V"
+    group: "TRIAL"
+    key_columns: ["NCT_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_LAB_RESULT"
+    group: "TRIAL"
+    key_columns: ["WASHOUT_PERIOD_IN_DAYS", "IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_LOCATION_V"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE", "LOCATION_NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_LOCATION_ASSIGNMENT"
+    group: "TRIAL"
+
+  - source_table: "TRIAL_NGS_CNV"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_NGS_FUSION"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_NGS_FUSION_GENE"
+    group: "TRIAL"
+    key_columns: ["GENE_ORDER", "EXON_NUMBER", "REFSEQ"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_NGS_IHC"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_NGS_SNV"
+    group: "TRIAL"
+    key_columns: ["EXON_NUMBER", "HGVSC", "HGVSP_SHORT", "INCLUDE_VUS", "IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_PHASE_ASSIGNMENT"
+    group: "TRIAL"
+
+  - source_table: "TRIAL_PRIOR_TREATMENT"
+    group: "TRIAL"
+    key_columns: ["WASHOUT_PERIOD_IN_DAYS", "IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_RACE"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_SEX_ASSIGNED_AT_BIRTH"
+    group: "TRIAL"
+    key_columns: ["IS_NEGATION -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL_TYPE_ASSIGNMENT"
+    group: "TRIAL"
+
+  # NGS Tables
+  - source_table: "NGS_CNV"
+    group: "NGS_CNV"
+    key_columns: ["NUMERIC_VALUE", "REFSEQ", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int", "IS_INHERITED -> int", "IS_PATHOGENIC -> int", "IS_ACTIONABLE -> int", "IS_LOW_COVERAGE_AMPLICON -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      NUMERIC_VALUE:
+        pattern: "^\\d+(\\.\\d+)?$"
+        pattern_regex_description: "One or more digits (0-9) followed by an optional decimal point and more digits"
+        nullable: true # can be null
+      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_WILD_TYPE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_INHERITED:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_PATHOGENIC:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_ACTIONABLE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_LOW_COVERAGE_AMPLICON:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+        expected_distribution:
+          "0":
+            min_count: 1
+          "1":
+            min_count: 2  # VUS may have some “1” values for CNV from Caris's report
+      IS_WILD_TYPE:
+        expected_distribution:
+          "0":
+            min_count: 1
+          "1":
+            min_count: 1
+      IS_INHERITED:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_PATHOGENIC:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_ACTIONABLE:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_LOW_COVERAGE_AMPLICON:
+        expected_distribution:
+          "1":
+            min_count: 1
+
+  - source_table: "NGS_CNV_V"
+    group: "NGS_CNV"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "HUGO_SYMBOL", "BIOMARKER", "ASSAY_RESULT","NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      ACCESSION_NUMBER:
+        pattern: "^(?:ONCO\\d{3}[A-Z0-9]*_[0-9]{8}-[A-Z]{2}-\\d{7}(?:_[A-Z0-9]+)*_(?:MP\\d{2}-\\d{3}MP\\d{5}|MC\\d{2}-\\d{5,8})|TN\\d{2}-\\d{6}|[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}|[a-zA-Z0-9]{6,12})$"
+        pattern_regex_description: "ONCO style: ONCO062R1_20240524-CM-2047483_... + ONCO _RELOAD_ style ONCO054_20250507-RM-2655086_RELOAD_... + TN style: TN22-123456 + UUIDs style: b0af1d91-d2c0-4dca-85c5-... + Short IDs: 24abcdef"
+        nullable: false # cannot be null
+      HUGO_SYMBOL:
+        pattern: "^(?=.{2,30}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 30 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      HUGO_SYMBOL:
+        expected_distribution:
+          "TP53":
+            min_count: 1
+            min_percent: 1.0
+          "BRCA1":
+            min_count: 1
+            min_percent: 1.0
+          "EGFR":
+            min_count: 1
+            min_percent: 1.0
+
+  - source_table: "NGS_CNV_V"
+    group: "NGS_CNV"
+    key_columns: ["ACCESSION_NUMBER", "HUGO_SYMBOL", "BIOMARKER", "ASSAY_RESULT","NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_CNV_V"
+    group: "NGS_CNV"
+    key_columns: ["ACCESSION_NUMBER", "BIOMARKER", "ASSAY_RESULT","NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_CNV_V"
+    group: "NGS_CNV"
+    key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT","NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_FUSION"
+    group: "NGS_FUSION"
+    key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
+    data_transformation_rules: ["normalize_null_nan"]
+    max_item_length_for_html_report: 200
+    max_word_length_for_html_report: 30
+    rule_based_data_validation:
+      DESCRIPTION:
+        pattern: "^(?=.{10,2000}$).*"
+        pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
+        nullable: true # can be null
+      NO_CHANGE_DETECTED:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: false # cannot be null
+    distribution_based_data_validation:
+      NO_CHANGE_DETECTED:
+        expected_distribution:
+          "0":
+            min_count: 1
+          "1":
+            min_count: 1
+          "true":
+            min_count: 1
+          "false":
+            min_count: 1
+
+  - source_table: "NGS_FUSION_GENE"
+    group: "NGS_FUSION"
+    key_columns: ["GENE_ORDER", "EXON_NUMBER", "REFSEQ", "CHROMOSOME", "START_POSITION", "STRAND"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      GENE_ORDER:
+        pattern: "^(1|2)$"
+        pattern_regex_description: "Either 1 or 2"
+        nullable: true # can be null
+      EXON_NUMBER:
+        pattern: "^(?:[1-9][0-9]{0,2})$"
+        pattern_regex_description: "Number between 1 and 999."
+        nullable: true # can be null
+      REFSEQ:
+        pattern: "^(?i)(NM_|NR_|NP_|XM_|XR_|XP_)\\d{6,10}(?:\\.\\d+)?$"
+        pattern_regex_description: "Starts with NM_ or NR_ or NP_ or XM_ or XR_ or XP_ (case insensitive), followed by 6-10 digits, optionally followed by a period and one or more digits"
+        nullable: true # can be null
+      CHROMOSOME:
+        pattern: "^(?:[1-9]|1[0-9]|2[0-3]|[XxYy])$"
+        pattern_regex_description: "Chromosome numbers 1-23 (!!! chromosome 23 indicates X or Y !!!), or letters X or Y (case insensitive)"
+        nullable: true # can be null
+      START_POSITION:
+        pattern: "^[1-9]\\d{0,10}$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 11 digits."
+        nullable: true # can be null
+      STRAND:
+        pattern: "^(\\+|-)$"
+        pattern_regex_description: "Either + or -"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      GENE_ORDER:
+        expected_distribution:
+          "1":
+            min_count: 1
+            min_percent: 3
+          "2":
+            min_count: 1
+            min_percent: 3
+      CHROMOSOME:
+        expected_distribution:
+          "1":
+            min_count: 1
+            min_percent: 0.1
+          "2":
+            min_count: 1
+            min_percent: 0.1
+          "3":
+            min_count: 1
+            min_percent: 0.1
+          "4":
+            min_count: 1
+            min_percent: 0.1
+          "5":
+            min_count: 1
+            min_percent: 0.1
+          "6":
+            min_count: 1
+            min_percent: 0.1
+          "7":
+            min_count: 1
+            min_percent: 0.5
+          "8":
+            min_count: 1
+            min_percent: 0.1
+          "9":
+            min_count: 1
+          "10":
+            min_count: 1
+            min_percent: 0.1
+          "11":
+            min_count: 1
+            min_percent: 0.2
+          "12":
+            min_count: 1
+            min_percent: 0.1
+          "13":
+            min_count: 1
+          "14":
+            min_count: 1
+          "15":
+            min_count: 1
+          "16":
+            min_count: 1
+          "17":
+            min_count: 1
+          "18":
+            min_count: 1
+          "19":
+            min_count: 1
+          "20":
+            min_count: 1
+          "21":
+            min_count: 1
+            min_percent: 0.4
+          "22":
+            min_count: 1
+            min_percent: 0.2
+          "X":
+            min_count: 1
+            min_percent: 0.2
+          "Y":
+            min_count: 1
+      STRAND:
+        expected_distribution:
+          "+":
+            min_count: 1
+            min_percent: 2
+          "-":
+            min_count: 1
+            min_percent: 1.0
+
+  - source_table: "NGS_FUSION_V"
+    group: "NGS_FUSION"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "NO_CHANGE_DETECTED", "GENE_1_HUGO_SYMBOL", "GENE_1_EXON", "GENE_1_REFSEQ", "GENE_1_CHROMOSOME", "GENE_1_START_POSITION", "GENE_1_STRAND", "GENE_2_HUGO_SYMBOL", "GENE_2_EXON", "GENE_2_REFSEQ", "GENE_2_CHROMOSOME", "GENE_2_START_POSITION", "GENE_2_STRAND"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      GENE_1_HUGO_SYMBOL:
+        pattern: "^(?=.{2,30}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 30 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: true # can be null
+      GENE_1_EXON:
+        pattern: "^(?:[1-9][0-9]{0,2})$"
+        pattern_regex_description: "Number between 1 and 999."
+        nullable: true # can be null
+      GENE_1_REFSEQ:
+        pattern: "^(?i)(NM_|NR_|NP_|XM_|XR_|XP_)\\d{6,10}(?:\\.\\d+)?$"
+        pattern_regex_description: "Starts with NM_ or NR_ or NP_ or XM_ or XR_ or XP_ (case insensitive), followed by 6-10 digits, optionally followed by a period and one or more digits"
+        nullable: true # can be null
+      GENE_1_CHROMOSOME:
+        pattern: "^(?:[1-9]|1[0-9]|2[0-3]|[XxYy])$"
+        pattern_regex_description: "Chromosome numbers 1-23 (!!! chromosome 23 indicates X or Y !!!), or letters X or Y (case insensitive)"
+        nullable: true # can be null
+      GENE_1_START_POSITION:
+        pattern: "^[1-9]\\d{0,10}$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 11 digits."
+        nullable: true # can be null
+      GENE_1_STRAND:
+        pattern: "^(\\+|-)$"
+        pattern_regex_description: "Either + or -"
+        nullable: true # can be null
+      GENE_2_HUGO_SYMBOL:
+        pattern: "^(?=.{2,30}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 30 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: true # can be null
+      GENE_2_EXON:
+        pattern: "^(?:[1-9][0-9]{0,2})$"
+        pattern_regex_description: "Number between 1 and 999."
+        nullable: true # can be null
+      GENE_2_REFSEQ:
+        pattern: "^(?i)(NM_|NR_|NP_|XM_|XR_|XP_)\\d{6,10}(?:\\.\\d+)?$"
+        pattern_regex_description: "Starts with NM_ or NR_ or NP_ or XM_ or XR_ or XP_ (case insensitive), followed by 6-10 digits, optionally followed by a period and one or more digits"
+        nullable: true # can be null
+      GENE_2_CHROMOSOME:
+        pattern: "^(?:[1-9]|1[0-9]|2[0-3]|[XxYy])$"
+        pattern_regex_description: "Chromosome numbers 1-23 (!!! chromosome 23 indicates X or Y !!!), or letters X or Y (case insensitive)"
+        nullable: true # can be null
+      GENE_2_START_POSITION:
+        pattern: "^[1-9]\\d{0,10}$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 11 digits."
+        nullable: true # can be null
+      GENE_2_STRAND:
+        pattern: "^(\\+|-)$"
+        pattern_regex_description: "Either + or -"
+        nullable: true # can be null
+
+  - source_table: "NGS_FUSION_V"
+    group: "NGS_FUSION"
+    key_columns: ["ACCESSION_NUMBER", "NO_CHANGE_DETECTED", "GENE_1_HUGO_SYMBOL", "GENE_1_EXON", "GENE_1_REFSEQ", "GENE_1_CHROMOSOME", "GENE_1_START_POSITION", "GENE_1_STRAND", "GENE_2_HUGO_SYMBOL", "GENE_2_EXON", "GENE_2_REFSEQ", "GENE_2_CHROMOSOME", "GENE_2_START_POSITION", "GENE_2_STRAND"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_GLOBAL_ALTERATION"
+    group: "NGS_GLOBAL_ALTERATION"
+    key_columns: ["ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      ASSAY_RESULT:
+        pattern: '^(?i)(Indeterminate|Not Detected|Proficient|Low|Stable|Negative|High|Deficient|partially absent|Intermediate|Equivocal|absent|Triple Negative|present|MSI|Deletion|HR-|Deleted|Wild Type|Positive|Other).*'
+        pattern_regex_description: "Case-insensitive, starting with one of the specified values, optionally followed by anything: Indeterminate, Not Detected, Proficient, Low, Stable, Negative, High, Deficient, partially absent, Intermediate, Equivocal, absent, Triple Negative, present, MSI, Deletion, HR-, Deleted, Wild Type, Positive, Other"
+        nullable: true # can be null
+      NUMERIC_VALUE:
+        pattern: "^(?:0(?:\\.\\d+)?|[1-9]\\d*(?:\\.\\d+)?)$"
+        pattern_regex_description: "Positive integer or decimal"
+        nullable: true # can be null
+
+  - source_table: "NGS_GLOBAL_ALTERATION_V"
+    group: "NGS_GLOBAL_ALTERATION"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "GLOBAL_ALTERATION_TYPE", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      GLOBAL_ALTERATION_TYPE:
+        pattern: "^(TMB|MSI|LOH|HRD|MMR|Folfox Responder Similarity|ER/PR/HER2/NEU|HRR)$"
+        pattern_regex_description: "One of the following exactly: TMB, MSI, LOH, HRD, MMR, HRR, ER/PR/HER2/NEU, Folfox Responder Similarity"
+        nullable: false # cannot be null
+
+  - source_table: "NGS_GLOBAL_ALTERATION_V"
+    group: "NGS_GLOBAL_ALTERATION"
+    key_columns: ["ACCESSION_NUMBER", "GLOBAL_ALTERATION_TYPE", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_GLOBAL_ALTERATION_V"
+    group: "NGS_GLOBAL_ALTERATION"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "GLOBAL_ALTERATION_TYPE", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_IHC"
+    group: "NGS_IHC"
+    key_columns: ["INTENSITY", "PERCENTAGE"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      INTENSITY:
+        pattern: "^(0|1\\+|2\\+|3\\+)$"
+        pattern_regex_description: "Allowed values: 0, 1+, 2+, 3+"
+        nullable: true # can be null
+      PERCENTAGE:
+        pattern: "^(100|[1-9]?\\d)$"
+        pattern_regex_description: "A integer number between 0 and 100"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      INTENSITY:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 20
+          "1+":
+            min_count: 1
+            min_percent: 15
+          "2+":
+            min_count: 1
+            min_percent: 19
+          "3+":
+            min_count: 1
+            min_percent: 2
+
+  - source_table: "NGS_IHC_V"
+    group: "NGS_IHC"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "PROTEIN_ALIAS", "BIOMARKER", "HUGO_SYMBOL", "ASSAY_RESULT", "INTENSITY", "PERCENTAGE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_IHC_V"
+    group: "NGS_IHC"
+    key_columns: ["ACCESSION_NUMBER", "PROTEIN_ALIAS", "BIOMARKER", "HUGO_SYMBOL", "ASSAY_RESULT", "INTENSITY", "PERCENTAGE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  # - source_table: "NGS_RNASEQ"
+  #   key_columns: ["TPM"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   sample_size: 100_000 # only validate a sample of 100,000 rows for performance. Teradata might throw error 2631: Transaction ABORTed due to deadlock.
+  #   rule_based_data_validation:
+  #     TPM:
+  #       pattern: "^(?:0(?:\\.\\d+)?|[1-9]\\d*(?:\\.\\d+)?)$"
+  #       pattern_regex_description: "Positive integer or decimal"
+  #       nullable: false # cannot be null
+
+  - source_table: "NGS_SNV"
+    group: "NGS_SNV"
+    key_columns: ["CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE1", "TUMOR_SEQ_ALLELE2", "DBSNP_RS", "HGVSC", "HGVSP_SHORT", "EXON_NUMBER", "T_REF_COUNT", "T_ALT_COUNT", "REFSEQ", "VARIANT_ALLELE_FREQUENCY","GENOTYPE", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int", "IS_INHERITED -> int", "IS_PATHOGENIC -> int", "IS_ACTIONABLE -> int", "IS_LOW_COVERAGE_AMPLICON -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+    max_item_length_for_html_report: 200
+    max_word_length_for_html_report: 30
+    rule_based_data_validation:
+      CHROMOSOME:
+        pattern: "^(?:[1-9]|1[0-9]|2[0-3]|[XxYy])$"
+        pattern_regex_description: "Chromosome numbers 1-23 (!!! chromosome 23 indicates X or Y !!!), or letters X or Y (case insensitive)"
+        nullable: true # can be null
+      START_POSITION:
+        pattern: "^(?:[1-9]\\d{0,10})$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 11 digits."
+        nullable: true # can be null
+      END_POSITION:
+        pattern: "^(?:[1-9]\\d{0,10})$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 11 digits."
+        nullable: true # can be null
+      STRAND:
+        pattern: "^(\\+|-)$"
+        pattern_regex_description: "Either + or -"
+        nullable: true # can be null
+      REFERENCE_ALLELE:
+        pattern: "^[ACGTNacgtn]+$"
+        pattern_regex_description: "Only contains the letters A, C, G, T, N (case insensitive), at least one character"
+        nullable: true # can be null
+      TUMOR_SEQ_ALLELE1:
+        pattern: "^[ACGTNacgtn]+$"
+        pattern_regex_description: "Only contains the letters A, C, G, T, N (case insensitive), at least one character"
+        nullable: true # can be null
+      TUMOR_SEQ_ALLELE2:
+        pattern: "^[ACGTNacgtn]+$"
+        pattern_regex_description: "Only contains the letters A, C, G, T, N (case insensitive), at least one character"
+        nullable: true # can be null
+      DBSNP_RS:
+        pattern: "^(?:rs\\d{1,15})$"
+        pattern_regex_description: "Starts with 'rs' followed by 1 to 15 digits"
+        nullable: true # can be null
+      HGVSC:
+        pattern: "^c\\.(?:\\*|\\(|-?\\d+)[A-Za-zACGTacgt0-9>_\\)\\(\\*\\+\\-]*$"
+        pattern_regex_description: "Start with c. (case-sensitive). Followed by a * or number or -number. And then can include any combination of digits, letters (ACTG, a-z) > _ * ( ) + or -"
+        nullable: true # can be null
+      HGVSP_SHORT:
+        pattern: "(?i)^(p\\.|c\\.)[A-Za-z0-9\\?\\*\\>_\\(\\)\\+\\=\\-]+$"
+        pattern_regex_description: "Starts with 'p.' or 'c.', followed by letters, digits, ?, *, >, _, (, ), +, =, or -"
+        nullable: true # can be null
+      EXON_NUMBER:
+        pattern: "^(?:[1-9][0-9]{0,2})$"
+        pattern_regex_description: "Number between 1 and 999."
+        nullable: true # can be null
+      T_REF_COUNT:
+        pattern: "^(?:0|[1-9]\\d{0,6})$"
+        pattern_regex_description: "A non-negative integer without leading zeros, up to 7 digits."
+        nullable: true # can be null
+      T_ALT_COUNT:
+        pattern: "^(?:0|[1-9]\\d{0,6})$"
+        pattern_regex_description: "A non-negative integer without leading zeros, up to 7 digits."
+        nullable: true # can be null
+      REFSEQ:
+        pattern: "^(?i)(NM_|NR_|NP_|XM_|XR_|XP_)\\d{6,10}(?:\\.\\d+)?$"
+        pattern_regex_description: "Starts with NM_ or NR_ or NP_ or XM_ or XR_ or XP_ (case insensitive), followed by 6-10 digits, optionally followed by a period and one or more digits"
+        nullable: true # can be null
+      VARIANT_ALLELE_FREQUENCY:
+        pattern: "^(0(\\.\\d+)?|1(\\.0+)?)$"
+        pattern_regex_description: "A decimal number between 0 and 1 inclusive"
+        nullable: true # can be null
+      GENOTYPE:
+        pattern: "^(?:0/0|0/1|1/1|1/2|2/2|0\\|0|0\\|1|1\\|1|1\\|2|2\\|2)$"
+        pattern_regex_description: "One of the following exactly: 0/0, 0/1, 1/1, 1/2, 2/2, 0|0, 0|1, 1|1, 1|2, 2|2"
+        nullable: true # can be null
+      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_WILD_TYPE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_INHERITED:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_PATHOGENIC:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_ACTIONABLE:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+      IS_LOW_COVERAGE_AMPLICON:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      CHROMOSOME:
+        expected_distribution:
+          "1":
+            min_count: 1
+            min_percent: 1.0
+          "2":
+            min_count: 1
+            min_percent: 0.5
+          "3":
+            min_count: 1
+            min_percent: 1.0
+          "4":
+            min_count: 1
+            min_percent: 0.5
+          "5":
+            min_count: 1
+            min_percent: 1.4
+          "6":
+            min_count: 1
+          "7":
+            min_count: 1
+            min_percent: 1.0
+          "8":
+            min_count: 1
+          "9":
+            min_count: 1
+            min_percent: 0.5
+          "10":
+            min_count: 1
+          "11":
+            min_count: 1
+            min_percent: 0.5
+          "12":
+            min_count: 1
+            min_percent: 1
+          "13":
+            min_count: 1
+          "14":
+            min_count: 1
+          "15":
+            min_count: 1
+          "16":
+            min_count: 1
+          "17":
+            min_count: 1
+            min_percent: 2
+          "18":
+            min_count: 1
+          "19":
+            min_count: 1
+            min_percent: 0.5
+          "20":
+            min_count: 1
+          "21":
+            min_count: 1
+          "22":
+            min_count: 1
+          "X":
+            min_count: 1
+          "Y":
+            min_count: 1
+      STRAND:
+        expected_distribution:
+          "+":
+            min_count: 1
+          "-":
+            min_count: 1
+      GENOTYPE:
+        expected_distribution:
+          "0/0":
+            min_count: 1
+          "0/1":
+            min_count: 1
+            min_percent: 1.5
+          "1/1":
+            min_count: 1
+          "1/2":
+            min_count: 1
+          "2/2":
+            min_count: 1
+      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 80
+          "1":
+            min_count: 1
+            min_percent: 5
+      IS_WILD_TYPE:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 80
+          "1":
+            min_count: 1
+            min_percent: 10
+      IS_INHERITED:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_PATHOGENIC:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_ACTIONABLE:
+        expected_distribution:
+          "1":
+            min_count: 1
+      IS_LOW_COVERAGE_AMPLICON:
+        expected_distribution:
+          "1":
+            min_count: 1
+
+  - source_table: "NGS_SNV_CLASSIFICATION"
+    group: "NGS_SNV"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      NAME:
+        pattern: "(?i)^(frame.*shift.*(del|ins)|in.*frame.*(del|ins)|missense.*mutation|nonsense.*mutation|silent|splice.*(site|region)|translation.*start.*site|nonstop.*mutation|[35]'.*?(utr|flank)|igr|intron|rna|targeted.*region|de.*novo.*start.*(in.*frame|out.*of.*frame)|non.*synonymous.*(del|ins)|unknown)$"
+        pattern_regex_description: "Ignores case, Accepts flexible separators (spaces, underscores). Matches exactly one of the standard mutation classification names: frame, shift, del, ins, missense, mutation, nonsense, silent, splice, translation, nonstop, igr, intron, rna, targeted, de novo, non synonymous, unknown"
+        nullable: false # cannot be null
+
+  - source_table: "NGS_SNV_CLASSIFICATION_TRANSLATION_V"
+    group: "NGS_SNV"
+    key_columns: ["CLASSIFICATION_GROUP_NAME", "SOURCE_CLASSIFICATION_STRING", "MAGIC_CLASSIFICATION"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_SNV_V"
+    group: "NGS_SNV"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "HUGO_SYMBOL", "BIOMARKER", "NCBI_BUILD", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION", "TYPE", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE1", "TUMOR_SEQ_ALLELE2", "HGVSC", "HGVSP_SHORT", "EXON", "T_REF_COUNT", "T_ALT_COUNT", "VARIANT_ALLELE_FREQUENCY", "GENOTYPE", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_SNV_V"
+    group: "NGS_SNV"
+    key_columns: ["ACCESSION_NUMBER", "HUGO_SYMBOL", "BIOMARKER", "NCBI_BUILD", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION", "TYPE", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE1", "TUMOR_SEQ_ALLELE2", "HGVSC", "HGVSP_SHORT", "EXON", "T_REF_COUNT", "T_ALT_COUNT", "VARIANT_ALLELE_FREQUENCY", "GENOTYPE", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER", "IS_QNS -> int"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      IS_QNS:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: false # cannot be null
+    distribution_based_data_validation:
+      IS_QNS:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 80.0
+          "1":
+            min_count: 1
+            min_percent: 5.0
+
+  - source_table: "NGS_TEST_RESULT_METADATA"
+    group: "NGS_TEST_RESULT"
+
+  - source_table: "NGS_TEST_RESULT_METADATA_TYPE"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_COUNT_BY_PANEL_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["SOURCE_NAME", "PANEL_CODE", "PANEL_NAME", "RECORD_COUNT"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_COUNT_BY_SOURCE_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["SOURCE_NAME", "RECORD_COUNT"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_DAILY_COUNT_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["PIPELINE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_METADATA_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER", "PAT_ID", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "SOURCE", "PANEL_CODE", "PATHOLOGY_CASE_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TEST_RESULT_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER", "SOURCE", "PANEL_CODE", "PATHOLOGY_CASE_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      SOURCE:
+        pattern: "^(?i)(PLMI|Caris|Tempus)$"
+        pattern_regex_description: "PLMI or Caris or Tempus, case insensitive"
+        nullable: false # cannot be null
+      PANEL_CODE:
+        pattern: "^(?i)(ALL|CHIP|CMI001|CMICSR|HFS|HN|HNFS|HS50|LPD|MYL1|MYL2|RS|TOP|XE|XF|XT)$"
+        pattern_regex_description: "ALL, CHIP, CMI001, CMICSR, HFS, HN, HNFS, HS50, LPD, MYL1, MYL2, RS, TOP, XE, XF, or XT (case insensitive)"
+        nullable: true # cannot be null
+      PATHOLOGY_CASE_NUMBER:
+        pattern: "^(?i)[A-Z]{1,3}\\d{2}-\\d{1,7}$"
+        pattern_regex_description: "IDs with 1-3 letters prefix, a 2-digit year, a hyphen, and a 1 to 7 digits number"
+        nullable: true # can be null
+    distribution_based_data_validation:
+      SOURCE:
+        expected_distribution:
+          "PLMI":
+            min_count: 1
+            min_percent: 30.0
+          "Caris":
+            min_count: 1
+            min_percent: 20.0
+          "Tempus":
+            min_count: 1
+            min_percent: 10.0
+
+  - source_table: "NGS_TEST_RESULT_WEEKLY_COUNT_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["PIPELINE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_LOH_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_LOH_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_MMR_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_MMR_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_MSI_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_MSI_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_TMB_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_TMB_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER", "NUMERIC_VALUE"]
+    data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "UNMATCHED_NGS_TEST_RESULT_V"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER", "SOURCE", "PANEL"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  # MUTATION_ANNOTATION Tables
+  - source_table: "MUTATION_ANNOTATION_CARIS_720"
+    group: "MUTATION_ANNOTATION"
+    key_columns: ["Hugo_Symbol", "Chromosome", "Start_Position", "End_Position", "Variant_Type", "Reference_Allele", "Tumor_Seq_Allele1", "Tumor_Seq_Allele2", "HGVSp_Short", "EXON"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "MUTATION_ANNOTATION_CARIS_720_SILENT"
+    group: "MUTATION_ANNOTATION"
+    key_columns: ["Hugo_Symbol", "Chromosome", "Start_Position", "End_Position", "Variant_Type", "Reference_Allele", "Tumor_Seq_Allele1", "Tumor_Seq_Allele2", "HGVSp_Short", "EXON"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  # Translation Tables
+  - source_table: "TRANSLATE_DISEASE_DESCRIPTION_CANCER_DIAGNOSIS"
+    group: "TRANSLATION"
+
+  - source_table: "TRANSLATE_DISEASE_DESCRIPTION_DEFINITION"
+    group: "TRANSLATION"
+
+  - source_table: "TRANSLATE_EDV_MEDICATION_TREATMENT"
+    group: "TRANSLATION"
+    key_columns: ["MED_NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRANSLATE_SOURCE_VARIANT_CLASSIFICATION"
+    group: "TRANSLATION"
+    key_columns: ["SOURCE_VARIANT_CLASSIFICATION"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  # Treatment Tables
+  - source_table: "TREATMENT_TYPE_ASSIGNMENT"
+
+  # Cancer Tables
+  - source_table: "CANCER_DIAGNOSIS"
+    group: "CANCER"
+
+  - source_table: "CANCER_DIAGNOSIS_CRITERION"
+    group: "CANCER"
+
+  - source_table: "CANCER_TYPE"
+    group: "CANCER"
+    key_columns: ["Case_ID", "PAT_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "ICD_O_MORPHOLOGY"
+    key_columns: ["MORPHOLOGY_CODE", "BEHAVIOR_CODE", "DESCRIPTION"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      MORPHOLOGY_CODE:
+        pattern: "^(\\d{4})$"
+        pattern_regex_description: "Exactly 4 digits"
+        nullable: false # cannot be null
+      BEHAVIOR_CODE:
+        pattern: "^(0|1|2|3|6|9)$"
+        pattern_regex_description: "Single digit: 0, 1, 2, 3, 6, or 9"
+        nullable: false # cannot be null
+    distribution_based_data_validation:
+      BEHAVIOR_CODE:
+        expected_distribution:
+          "0":
+            min_count: 1
+            min_percent: 25.0
+          "1":
+            min_count: 1
+            min_percent: 10.0
+          "2":
+            min_count: 1
+            min_percent: 2.0
+          "3":
+            min_count: 1
+            min_percent: 50.0
+          "6":
+            min_count: 1
+          "9":
+            min_count: 1
+
+  - source_table: "ALTERNATE_GENE_SYMBOL"
+    key_columns: ["SYMBOL"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "ANCILLARY_TEST_RESULT"
+  - source_table: "ANCILLARY_TEST_RESULT_METADATA"
+  - source_table: "ANCILLARY_TEST_RESULT_METADATA_TYPE"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "BIOMARKER_GENE_ASSIGNMENT"
+
+  - source_table: "CBIOPORTAL_IDENTIFIER"
+  - source_table: "COUNTRY"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "GENDER"
+    key_columns: ["NAME", "GENDER_CD"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      NAME:
+        pattern: "^(?i)(Male|Female|NONBINARY|X|Other|Unknown)$"
+        pattern_regex_description: "Male, Female, Nonbinary, X, Other, or Unknown (case insensitive) !!! Allow duplicates !!!"
+        nullable: false # cannot be null
+      GENDER_CD:
+        pattern: "^[1-9]\\d{0,3}$"
+        pattern_regex_description: "Between 1 and 4 digits, starting with a non-zero digit"
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+    distribution_based_data_validation:
+      NAME:
+        expected_distribution:
+          "Male":
+            min_count: 1
+          "Female":
+            min_count: 1
+          "Nonbinary":
+            min_count: 1
+          "X":
+            min_count: 1
+          "Other":
+            min_count: 1
+          "Unknown":
+            min_count: 1
+
+  - source_table: "GENE"
+    key_columns: ["HUGO_SYMBOL", "ENTREZ_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      HUGO_SYMBOL:
+        pattern: "^(?=.{2,30}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 30 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: false # cannot be null
+      ENTREZ_ID:
+        pattern: "^[1-9]\\d{0,10}$"
+        pattern_regex_description: "A positive integer without leading zeros, up to 10 digits."
+        nullable: true # can be null
+
+  - source_table: "MAGIC_ID_LOOKUP"
+
+  - source_table: "PANEL"
+    key_columns: ["CODE", "NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      CODE:
+        pattern: "^(?i)(PST|LPD|HN|MYL1|HNFS|ALL|HFS|CHIP|MYL2|HS50|XE|XF|HRD|XT|TOP|CMI001|CMICSR|RS)$"
+        pattern_regex_description: "PST, LPD, HN, MYL1, HNFS, ALL, HFS, CHIP, MYL2, HS50, XE, XF, HRD, XT, TOP, CMI001, CMICSR, or RS (case insensitive)"
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+      NAME:
+        pattern: "^.{10,200}$"
+        pattern_regex_description: "Between 10 and 200 characters long"
+        nullable: true # can be null
+        unique: true  # values must be unique
+
+  - source_table: "PANEL_VERSION"
+    key_columns: ["VERSION"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      VERSION:
+        pattern: "^(?i)(v?\\d+(\\.\\d+){0,2})$"
+        pattern_regex_description: "Semantic-style versions: 1.0.41, 1.0.7, v2.1.2, V1.2.5 Single major versions: V1, V2, V3, V4"
+        nullable: false # cannot be null
+
+  - source_table: "PATHOLOGY_CASE"
+    key_columns: ["CASE_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "PIPELINE_LOG"
+  - source_table: "PROTEIN_ALIAS"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "PROTEIN_ALIAS_V"
+    key_columns: ["PROTEIN_ALIAS", "HUGO_SYMBOL"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      PROTEIN_ALIAS:
+        pattern: "^(?=.{2,100}$)[A-Za-z0-9\\s\\-/()]+([A-Za-z0-9\\s\\-/()]*)$"  # e.g., HER2, EGFR, PD-L1
+        pattern_regex_description: "between 2 and 100 characters long total, contain letters, digits, spaces, hyphens -, slashes /, and parentheses (), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: false # cannot be null
+      HUGO_SYMBOL:
+        pattern: "^(?=.{2,30}$)[A-Za-z0-9]+(-[A-Za-z0-9]+)*$"  # e.g., TP53, BRCA1, EGFR
+        pattern_regex_description: "between 2 and 30 characters long total, contain only letters (A-Z, a-z) and digits (0-9), may include hyphens (-) only between alphanumeric segments (not at the start or end)"
+        nullable: false # cannot be null
+
+  - source_table: "RACE"
+    key_columns: ["NAME"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "SOURCE_FILE_INGEST_LOG"
+
+  - source_table: "SPECIMEN"
+    group: "Specimen"
+    key_columns: ["SPEC_NUMBER_LN1", "PART"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      SPEC_NUMBER_LN1:
+        pattern: "^(?i)[A-Z]{1,3}\\d{2}-\\d{1,10}\\s[A-Z]$"
+        pattern_regex_description: "<sample_id> is like S24-123049, C23-010205 + <single_letter_grade> is a single uppercase letter (A-Z)."
+        nullable: false # cannot be null
+      PART:
+        pattern: "^[A-Z]$"
+        pattern_regex_description: "A single uppercase letter (A-Z)"
+        nullable: false # cannot be null
+
+  - source_table: "SPECIMEN_BLOCK"
+    group: "Specimen"
+    key_columns: ["BLOCK"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      BLOCK:
+        pattern: "^[A-Z]\\d+$"
+        pattern_regex_description: "1 uppercase letter + digits"
+        nullable: false # cannot be null
+
+  - source_table: "SPECIMEN_SOURCE"
+    group: "Specimen"
+    key_columns: ["NAME", "SPECIMEN_SOURCE_CD"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      NAME:
+        pattern: "^[A-Z0-9 _.,&'+-/()<>]+$"
+        pattern_regex_description: "Uppercase letters, digits, space, and certain symbols _ . , & ' + - / ( ) < > !!! Allow duplicates !!!"
+        nullable: false # cannot be null
+      SPECIMEN_SOURCE_CD:
+        pattern: "^[1-9]\\d{3,6}$"
+        pattern_regex_description: "Between 4 and 6 digits, starting with a non-zero digit"
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+
+  - source_table: "SPECIMEN_TYPE"
+    group: "Specimen"
+    key_columns: ["NAME", "SPECIMEN_TYPE_CD"]
+    data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      NAME:
+        pattern: "^[A-Z0-9 _.,&'+-/()<>]+$"
+        pattern_regex_description: "Uppercase letters, digits, space, and certain symbols _ . , & ' + - / ( ) < >"
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+      SPECIMEN_TYPE_CD:
+        pattern: "^[1-9]\\d{3,6}$"
+        pattern_regex_description: "Between 4 and 6 digits, starting with a non-zero digit"
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+
+  - source_table: "SPECIMEN_V"
+    group: "Specimen"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "SPEC_NUMBER_LN1", "PART", "SPECIMEN_TYPE"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "SPECIMEN_V"
+    group: "Specimen"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "SPEC_NUMBER_LN1", "PART"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+
+  - source_table: "SPECIMEN_V"
+    group: "Specimen"
+    key_columns: ["PAT_ID", "SPEC_NUMBER_LN1"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "STATE"
+    key_columns: ["NAME", "ABBREVIATION"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "URGENT_LOGS_LAST_TWO_DAYS_V"
+    key_columns: ["PIPELINE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 2
+
+  # Sample size for data validation (dont set, or set to null or 0 = all data)
+  # sample_size: 300_000  # uncomment to limit sample size to 300,000 rows per table
+
+  data_validation_threshold:
+    success: 99.5  # Threshold for success rate (percentage)
+    warning: 97.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 0.5   # Threshold for success rate (percentage)
+    warning: 3.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_data_validation: true
+  enable_data_match_validation: true
+  enable_rule_based_data_validation: true
+  enable_distribution_based_data_validation: true

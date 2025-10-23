@@ -1,0 +1,26 @@
+<div class="venn_diagram_wrap">
+    <div class="venn_diagram_card" role="img" aria-label="Venn diagram">
+        <!-- SVG Venn diagram -->
+        <svg viewBox="0 0 900 420" role="presentation" aria-hidden="false" class="venn_diagram_svg">
+            {{ venn_diagram_db_all_html | safe }}
+
+            <circle class="venn_diagram_set1" cx="448" cy="210" r="180" />
+            <circle class="venn_diagram_set2" cx="450" cy="210" r="180" />
+
+            <!-- Intersection -->
+            <text class="venn_diagram_count" x="450" y="210">
+                {{ "{:,}".format(set1_value) }}
+            </text>
+
+            <!-- Labels under each circle -->
+            <text class="venn_diagram_label" x="350" y="310">
+                {{ set1_label }}
+            </text>
+
+            <text class="venn_diagram_label" x="500" y="350">
+                {{ set2_label }}
+            </text>
+
+        </svg>
+    </div>
+</div>

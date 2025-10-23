@@ -1,0 +1,30 @@
+<div class="venn_diagram_wrap">
+    <div class="venn_diagram_card" role="img" aria-label="Venn diagram">
+        <!-- SVG Venn diagram -->
+        <svg viewBox="0 0 900 420" role="presentation" aria-hidden="false" class="venn_diagram_svg">
+            {{ venn_diagram_db_all_html | safe }}
+
+            <circle class="venn_diagram_set1" cx="275" cy="210" r="120" />
+            <circle class="venn_diagram_set2" cx="605" cy="210" r="130" />
+
+            <!-- counts -->
+
+            <text class="venn_diagram_count" x="275" y="210">
+                {{ "{:,}".format(set1_value) }}
+            </text>
+
+            <text class="venn_diagram_count" x="605" y="210">
+                {{ "{:,}".format(set2_value) }}
+            </text>
+
+            <!-- Labels under each circle -->
+            <text class="venn_diagram_label" x="280" y="280">
+                {{ set1_label }}
+            </text>
+
+            <text class="venn_diagram_label" x="605" y="280">
+                {{ set2_label }}
+            </text>
+        </svg>
+    </div>
+</div>

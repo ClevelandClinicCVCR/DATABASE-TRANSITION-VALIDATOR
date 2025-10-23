@@ -1,0 +1,26 @@
+# Consolidated project requirements
+# Created on 2025-10-23
+# Core libraries
+pandas>=1.5.0
+PyYAML>=6.0.1
+jinja2>=3.1.0
+
+# Database / ORM layers
+sqlalchemy>=1.4
+sqlmodel>=0.0.14
+
+# Snowflake
+snowflake-sqlalchemy>=1.4.4
+
+# Teradata
+teradatasql>=17.0.0
+teradatasqlalchemy  # Provides SQLAlchemy dialect registration for teradatasql
+
+# SQL Server (via pymssql used in connection string "mssql+pymssql://")
+pymssql>=2.2.8
+
+# This project depends on the external Magic Models package providing shared utilities
+# magic-models  # (Install from your internal index or source; adjust name/version as needed)
+
+# If magic-models is a local path or VCS, replace the above line, e.g.:
+# git+ssh://git@github.com/your-org/magic-models.git@<commit_hash>

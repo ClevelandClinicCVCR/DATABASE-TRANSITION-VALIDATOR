@@ -1,0 +1,34 @@
+<div class="venn_diagram_wrap">
+    <div class="venn_diagram_card" role="img" aria-label="Venn diagram">
+        <!-- SVG Venn diagram -->
+        <svg viewBox="0 0 900 420" role="presentation" aria-hidden="false" class="venn_diagram_svg">
+            {{ venn_diagram_db_all_html | safe }}
+
+            <!-- left circle (Set 1) -->
+            <circle class="venn_diagram_set1" cx="360" cy="210" r="180" />
+            <!-- right circle (Set 2) -->
+            <circle class="venn_diagram_set2" cx="540" cy="210" r="200" />
+
+            <!-- counts -->
+            <!-- Set 1 only -->
+            <text class="venn_diagram_count" x="250" y="210">{{ "{:,}".format(set1_value - intersection_value) }}</text>
+            <text class="venn_diagram_percent" x="235" y="240">
+                {{ '%.2f' % ((set1_value - intersection_value) / set1_value * 100) }}%
+            </text>
+            <!-- Intersection -->
+            <text class="venn_diagram_count" x="440" y="210">{{ "{:,}".format(intersection_value) }}</text>
+            <!-- Set 2 only -->
+            <text class="venn_diagram_count" x="650" y="210">{{ "{:,}".format(set2_value - intersection_value) }}</text>
+            <text class="venn_diagram_percent" x="635" y="240">
+                {{ '%.2f' % ((set2_value - intersection_value) / set2_value * 100) }}%
+            </text>
+
+            <!-- Labels under each circle -->
+            <text class="venn_diagram_label" x="290" y="310">{{ set1_label }}</text>
+            <text class="venn_diagram_label" x="580" y="350">{{ set2_label }}</text>
+
+            <!-- optional subtle intersection outline (for accessibility/visual clarity) -->
+            <ellipse cx="440" cy="210" rx="60" ry="110" fill="none" stroke="rgba(0,0,0,0.02)" />
+        </svg>
+    </div>
+</div>

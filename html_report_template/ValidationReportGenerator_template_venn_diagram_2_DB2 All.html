@@ -1,0 +1,12 @@
+<!-- right ellipse (DB2 All) -->
+<ellipse class="venn_diagram_db2_all" cx="590" cy="210" rx="270" ry="209" />
+
+<!-- Count DB2 All only -->
+<text class="venn_diagram_count" x="800" y="210">
+    {{ "{:,}".format(total_count - set_count) }}
+</text>
+
+<text class="venn_diagram_percent" x="790" y="240">
+    {{ '%.2f' % ((total_count - set_count) / total_count * 100) }}
+    %
+</text>

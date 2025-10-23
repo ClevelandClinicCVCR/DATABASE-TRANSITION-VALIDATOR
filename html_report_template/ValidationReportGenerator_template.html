@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Database Transition Validation Report</title>
+    <style>
+        {{ template_css_content  }}
+    </style>
+    <script>
+        {{ template_script_content }}
+    </script>
+</head>
+
+<body>
+    <button id="scrollToTopBtn" title="Scroll to top">&#8679;</button>
+
+    <div class="header">
+        <h1>Database Transition Validation Report</h1>
+        <p><strong>Validation ID:</strong> {{ validation_id }}</p>
+        <p><strong>Source Database:</strong> <span class="bigger-text"> {{ source_database }} </span> </p>
+        <p><strong>Target Database:</strong> <span class="bigger-text">{{ target_database }} </span></p>
+        <p><strong>Start Time:</strong> {{ start_time }}</p>
+        <p><strong>End Time:</strong> {{ end_time }}</p>
+        <p><strong>Total Execution Time:</strong>
+            {% set hours = execution_time // 3600 %}
+            {% set minutes = (execution_time % 3600) // 60 %}
+            {% set seconds = execution_time % 60 %}
+            {% if hours|int > 0 %}{{ hours|int }} h {% endif %}
+            {% if minutes|int > 0 %}{{ minutes|int }} m {% endif %}
+            {{ "%.2f" % seconds }} s
+        </p>
+        <p><strong>Overall Status:</strong>
+            <span class="status-{{ overall_status.lower() }}">
+                {% if overall_status == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+                {{ overall_status }}
+            </span>
+        </p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-button" onclick="showTab('summaryTab')">
+            Summary
+            {% if overall_status == "FAIL" %}
+                <span title="Failed" class="issue-fail">&#10060;</span>
+            {% elif overall_status == "WARNING" %}
+                <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not schema_validation_results %} disabled-tab{% endif %}"
+                onclick="showTab('schemaTab')" {% if not schema_validation_results %}disabled title="User has disabled the schema validation"{% endif %}>
+            {% if not schema_validation_results %}
+                <span class="skip-tab" title="Skip Schema Validation">&#10006; Schema</span>
+            {% else %}
+                Schema
+
+                {% if overall_status_schema_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_schema_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('rowCountTab')"
+        {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result %}
+                <span class="skip-tab" title="Skip Data Validation">&#10006; Row Count</span>
+            {% else %}
+                Row Count
+
+                {% if overall_status_row_count_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_row_count_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('dataTab')"
+        {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result %}
+                <span class="skip-tab" title="Skip Data Validation">&#10006; Data Match</span>
+            {% else %}
+                Data Match
+
+                {% if overall_status_data_match_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_data_match_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('dataTabDetail')"
+        {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result %}
+                <span class="skip-tab" title="Skip Data Validation">&#10006; Detailed Data Match</span>
+            {% else %}
+                Detailed Data Match
+
+                {% if overall_status_data_match_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_data_match_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not data_match_validation_result or disable_rule_based_data_validation %} disabled-tab{% endif %}" onclick="showTab('ruleBasedValidation')"
+        {% if not data_match_validation_result or disable_rule_based_data_validation %}disabled title="User has disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result or disable_rule_based_data_validation %}
+                <span class="skip-tab" title="Skip Rule Based Validation">&#10006; Rule Based Validation</span>
+            {% else %}
+                Rule Based Validation
+
+                {% if overall_status_rule_based_data_validation_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_rule_based_data_validation_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+
+        <button class="tab-button{% if not data_match_validation_result or disable_distribution_based_data_validation %} disabled-tab{% endif %}" onclick="showTab('distributionBasedValidation')"
+        {% if not data_match_validation_result or disable_distribution_based_data_validation %}disabled title="User has disabled the distribution based validation"{% endif %} >
+            {% if not data_match_validation_result or disable_distribution_based_data_validation %}
+                <span class="skip-tab" title="Skip Rule Based Validation">&#10006; Distribution Based Validation</span>
+            {% else %}
+                Distribution Based Validation
+
+                {% if overall_status_distribution_based_data_validation_result == "FAIL" %}
+                    <span title="Failed" class="issue-fail">&#10060;</span>
+                {% elif overall_status_distribution_based_data_validation_result == "WARNING" %}
+                    <span title="Warning" class="issue-warning">&#9888;&#65039;</span>
+                {% endif %}
+            {% endif %}
+        </button>
+    </div>
+
+    <div id="summaryTab" class="tab-content" style="display:block;">
+        <div class="summary">
+            <div class="summary-card">
+                <h3>Tables/Views Summary</h3>
+                <p><strong>Total Tables/Views:</strong> {{ "{:,}".format(summary.total_tables) }}</p>
+                <p><strong>Successful:</strong> {{ "{:,}".format(summary.successful_tables) }} (passed without any warning issues) </p>
+                <p><strong>Passed:</strong> {{ "{:,}".format(summary.passed_tables) }}</p>
+
+                <p{% if summary.warning_tables > 0 %} class="issue-warning"{% endif %}>
+                    <strong>Warnings:</strong> {{ "{:,}".format(summary.warning_tables) }}
+                </p>
+
+                <p {% if summary.failed_tables > 0 %} class="issue-fail"{% endif %}>
+                    <strong>Failed:</strong> {{ "{:,}".format(summary.failed_tables) }}
+                </p>
+
+                <p><strong>Success Rate:</strong> {{ "%.2f" % summary.success_rate_tables }}%</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Data Summary</h3>
+                <p><strong>Source Records:</strong> {{ "{:,}".format(summary.total_source_records) }}</p>
+                <p><strong>Target Records:</strong> {{ "{:,}".format(summary.total_target_records) }}</p>
+
+                {% if data_match_validation_result and data_match_validation_result|length > 0 and data_match_validation_result[0].sample_size and data_match_validation_result[0].sample_size > 0 %}
+                <p class="issue-warning"><strong>Sample Size: {{ "{:,}".format(data_match_validation_result[0].sample_size) }}
+                        ONLY</strong></p>
+                {% endif %}
+
+                <p><strong>Matching Records:</strong> {{ "{:,}".format(summary.total_matching_records) }}</p>
+                <p><strong>Data Success Rate:</strong> {{ "%.2f" % summary.overall_data_success_rate }}%</p>
+            </div>
+        </div>
+
+        <div class="sticky-head-table-container">
+            <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Table/View Name</th>
+                    <th>Schema Issues</th>
+                    <th>Data Issues</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(issue_row_index=1) %}
+                {% for schema in schema_validation_results %}
+                    {% for table in data_match_validation_result %}
+                        {% if schema.source_table_name == table.table_name and (schema.validation_issues or table.data_match_validation_issues or table.row_count_validation_issues) %}
+                        <tr>
+                            <td>{{ ns.issue_row_index }}</td>
+                            {% set ns.issue_row_index = ns.issue_row_index + 1 %}
+                            <td>
+                                {% if schema.source_table_or_view == "view" %}
+                                <span title="View" style="margin-right:4px;">&#128196;</span>
+                                {% elif schema.source_table_or_view == "table" %}
+                                <span title="Table" style="margin-right:4px;">&#128202;</span>
+                                {% endif %}
+                                {{ schema.source_table_name }}
+                            </td>
+                            <td style="width:40%; vertical-align:top;">
+                                {% if schema.validation_issues %}
+                                <ul>
+                                    {% for issue in schema.validation_issues %}
+                                    <li title="{{ issue.description }}">
+                                        <span class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif issue.severity.value=='WARNING' %}issue-warning{% endif %}">
+                                        {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </td>
+                            <td style="width:40%; vertical-align:top;">
+                                {% if table.data_match_validation_issues or table.row_count_validation_issues %}
+                                <ul>
+                                    {% for issue in table.row_count_validation_issues %}
+                                    <li title="{{ issue.description }}">
+                                        <span class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif issue.severity.value == 'WARNING' %}issue-warning{% endif %}">
+                                        {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+
+                                    {% for issue in table.data_match_validation_issues %}
+                                    <li title="{{ issue.description }}">
+                                        <span class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif issue.severity.value == 'WARNING' %}issue-warning{% endif %}">
+                                        {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div id="schemaTab" class="tab-content" style="display:none;">
+        {% if schema_validation_results %}
+        <h2>Schema Validation Results</h2>
+        <div class="sticky-head-table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Table/View Name</th>
+                    <th>Status</th>
+                    <th>Source Columns</th>
+                    <th>Target Columns</th>
+                    <th>Missing Columns</th>
+                    <th>Extra Columns</th>
+                    <th>Type Mismatches</th>
+                    <th>Issues</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schema in schema_validation_results %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        {% if schema.source_table_or_view == "view" %}
+                        <span title="View" style="margin-right:4px;">&#128196;</span>
+                        {% elif schema.source_table_or_view == "table" %}
+                        <span title="Table" style="margin-right:4px;">&#128202;</span>
+                        {% endif %}
+
+                        {{ schema.source_table_name }}
+                    </td>
+                    <td><span class="status-{{ schema.status.value.lower() }}">{{ schema.status.value }}</span></td>
+                    <td>
+                        {% if schema.source_col_names %}
+                        <span
+                            title="Source Columns: &#10;{% for col in schema.source_col_names %} - {{ col }}&#10;{% endfor %}">
+                            {{ schema.source_col_names|length }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if schema.target_col_names %}
+                        <span
+                            title="Target Columns: &#10;{% for col in schema.target_col_names %} - {{ col }}&#10;{% endfor %}">
+                            {{ schema.target_col_names|length }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if schema.missing_columns is not none %}
+                        {% if schema.missing_columns %}
+                        {% for col in schema.missing_columns %}
+                        {{ col }}<br>
+                        {% endfor %}
+                        {% endif %}
+                        {% else %}
+                        <span
+                            title="Cannot determine missing columns because source or target table/view does not exist">
+                            N/A
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if schema.extra_columns is not none %}
+                        {% if schema.extra_columns %}
+                        {% for col in schema.extra_columns %}
+                        {{ col }}<br>
+                        {% endfor %}
+                        {% endif %}
+                        {% else %}
+                        <span
+                            title="Cannot determine extral columns because source or target table/view does not exist">
+                            N/A
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if schema.type_mismatches is not none %}
+                        {% if schema.type_mismatches %}
+                        {% for mismatch in schema.type_mismatches %}
+                        {{ mismatch.column }}:
+                        <span class="issue-fail" {% if mismatch.source_type.split(' ')|length > 1 %}
+                            title="{{ mismatch.source_type.replace(' \"', ' \'') }}" {% endif %}>
+                            {{ mismatch.source_type.split(' ')[0] }}
+                        </span>
+                        &rarr;
+                        <span class="issue-fail" {% if mismatch.target_type.split(' ')|length > 1 %}
+                            title="{{ mismatch.target_type.replace(' \"', ' \'') }}" {% endif %}>
+                            {{ mismatch.target_type.split(' ')[0] }}
+                        </span>
+                        <br>
+                        {% endfor %}
+                        {% endif %}
+                        {% else %}
+                        <span
+                            title="Cannot determine type_mismatches columns because source or target table/view does not exist">
+                            N/A
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if schema.validation_issues %}
+                        <ul>
+                            {% for issue in schema.validation_issues %}
+                            <li title="{{ issue.description }}">
+                                <span class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif
+                                issue.severity.value=='WARNING' %}issue-warning{% endif %}">
+                                    {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="rowCountTab" class="tab-content" style="display:none;">
+        {% if data_match_validation_result %}
+        <h2>Row Count Validation Results</h2>
+        <div class="sticky-head-table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Table/View Name</th>
+                    <th>Status</th>
+                    <th>Source Count</th>
+                    <th>Target Count</th>
+                    <th>% Count Difference</th>
+                    <th>Issues</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set ns = namespace(row_count_index=1, seen_table_names=[]) %}
+                {% for table in data_match_validation_result %}
+                {% if table.table_name not in ns.seen_table_names %}
+                <tr>
+                    <td>{{ ns.row_count_index }}</td>
+                    {% set ns.row_count_index = ns.row_count_index + 1 %}
+                    {% set _ = ns.seen_table_names.append(table.table_name) %}
+                    <td>
+                        <span
+                            title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                            {% if table.source_table_or_view == "view" %}
+                            <span title="View" style="margin-right:4px;">&#128196;</span>
+                            {% elif table.source_table_or_view == "table" %}
+                            <span title="Table" style="margin-right:4px;">&#128202;</span>
+                            {% endif %}
+
+                            {{ table.table_name }}
+                        </span>
+                    </td>
+                    <td><span class="status-{{ table.row_count_status.value.lower() }}">{{ table.row_count_status.value }}</span></td>
+                    <td>
+                        {% if table.source_table_exist %}
+                        {{ "{:,}".format(table.source_count) }}
+                        {% else %}
+                        <span title="Source table/view does not exist">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.target_table_exist %}
+                        {{ "{:,}".format(table.target_count) }}
+                        {% else %}
+                        <span title="Target table/view does not exist">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.source_table_exist and table.target_table_exist
+                            and table.source_count is number and table.target_count is number %}
+
+                            {% if table.percent_count_difference < 0 %}
+                                <span style="color: orange; font-weight: bold;"> + </span>
+                            {% elif table.percent_count_difference > 0 %}
+                                <span style="color: red; font-weight: bold;"> - </span>
+                            {% endif %}
+
+                            &nbsp; {{ "%.1f" % table.percent_count_difference|abs }}%
+
+                        {% else %}
+                            <span
+                                title="Cannot calculate percent difference because source or target table/view does not exist, or counts are not available">
+                                N/A
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.row_count_validation_issues %}
+                        <ul>
+                            {% for issue in table.row_count_validation_issues %}
+                            <li title="{{ issue.description }}">
+                                <span
+                                    class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif issue.severity.value == 'WARNING' %}issue-warning{% endif %}">
+                                    {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="dataTab" class="tab-content" style="display:none;">
+        {% if data_match_validation_result %}
+        <h2>Data Validation Results</h2>
+        <div class="sticky-head-table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Table/View Name</th>
+                    <th>Status</th>
+
+                    <th>Source Set/Total</th>
+                    <th>Target Set/Total</th>
+                    <th>Set Match</th>
+
+                    <th>Success Rate</th>
+                    <th>Progress</th>
+                    <th>Execution Time</th>
+                    <th>Issues</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table in data_match_validation_result %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <span
+                            title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                            {% if table.source_table_or_view == "view" %}
+                            <span title="View" style="margin-right:4px;">&#128196;</span>
+                            {% elif table.source_table_or_view == "table" %}
+                            <span title="Table" style="margin-right:4px;">&#128202;</span>
+                            {% endif %}
+
+                            {{ table.table_name }}
+                        </span>
+                    </td>
+                    <td><span class="status-{{ table.get_data_match_status.value.lower() }}">{{ table.get_data_match_status.value }}</span></td>
+
+                    <td>
+                        {% if table.compare_sample_data_result.source_sample_set_count is number %}
+                            {{ "{:,}".format(table.compare_sample_data_result.source_sample_set_count) }}
+                        {% endif %}
+                        /
+                        {% if table.compare_sample_data_result.source_sample_count is number %}
+                            {{ "{:,}".format(table.compare_sample_data_result.source_sample_count) }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.compare_sample_data_result.target_sample_set_count is number %}
+                            {{ "{:,}".format(table.compare_sample_data_result.target_sample_set_count) }}
+                        {% endif %}
+                        /
+                        {% if table.compare_sample_data_result.target_sample_count is number %}
+                            {{ "{:,}".format(table.compare_sample_data_result.target_sample_count) }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.compare_sample_data_result.matching_set_record_count is number %}
+                            {{ "{:,}".format(table.compare_sample_data_result.matching_set_record_count) }}
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if table.key_columns %}
+                        <span
+                            title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                            {{ "%.2f" % table.success_rate }}%
+                        </span>
+                        {% else %}
+                        <span title="Skip data validation because there are no key columns">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if table.key_columns %}
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-{% if table.success_rate >= 99 %}pass{% elif table.success_rate >= 95 %}warning{% else %}fail{% endif %}"
+                                style="width: {{ table.success_rate }}%"></div>
+                        </div>
+                        {% else %}
+                        <span title="Skip data validation because there are no key columns">Skip</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ "%.2f" % table.execution_time_seconds }}s</td>
+                    <td>
+                        {% if table.data_match_validation_issues|length > 3 %}
+                        {{ table.data_match_validation_issues|length }} issues
+                        {% endif %}
+
+                        {% if table.data_match_validation_issues %}
+                        <ul>
+                            {% for issue in table.data_match_validation_issues %}
+                            <li title="{{ issue.description }}">
+                                <span
+                                    class="{% if issue.severity.value == 'FAIL' %}issue-fail{% elif issue.severity.value == 'WARNING' %}issue-warning{% endif %}">
+                                    {{ issue.severity.print_value }}: {{ issue.issue_type }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="dataTabDetail" class="tab-content" style="display:none;">
+        <h2>Detailed Data Validation Results</h2>
+
+        {% if not (data_match_validation_result_grouped|length == 1 and '_no_group_' in data_match_validation_result_grouped) %}
+            <div class="grouped-tabs">
+                {% for group_name, data_list in data_match_validation_result_grouped.items() %}
+                {% if data_list | length > 0 %}
+                    <button class="group-tab-button" onclick="showGroupTab('groupTab_{{ loop.index }}')">
+                        {{ group_name }} ({{ data_list | length }})
+                    </button>
+                {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% for group_name, data_list in data_match_validation_result_grouped.items() %}
+        <div id="groupTab_{{ loop.index }}" class="tab-content grouped-tab-content" style="display:none;">
+            {% if data_list and data_list | length > 0 %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Table/View Name</th>
+                        <th>Source Set/Total</th>
+                        <th>Target Set/Total</th>
+                        <th>Set Match</th>
+                        <th>Source Set Match</th>
+                        <th>Target Set Match</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set ns = namespace(table_index=1) %}
+                    {% for table in data_list %}
+                    {% if table.key_columns and table.source_count and table.source_count > 0 and table.target_count and table.target_count > 0 %}
+                        {% if ns.table_index > 1 %}
+                        <tr>
+                            <th></th>
+                            <th>
+                                {% if table.source_table_or_view == "view" %}
+                                <span title="View" style="margin-right:4px;">&#128196; VIEW </span>
+                                {% elif table.source_table_or_view == "table" %}
+                                <span title="Table" style="margin-right:4px;">&#128202; TABLE</span>
+                                {% endif %}
+                            </th>
+                            <th>Source Set/Total</th>
+                            <th>Target Set/Total</th>
+                            <th>Set Match</th>
+                            <th>Source Set Match</th>
+                            <th>Target Set Match</th>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>{{ ns.table_index }}</td>
+                            {% set ns.table_index = ns.table_index + 1 %}
+                            <td>
+                                <span title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                                    {% if table.source_table_or_view == "view" %}
+                                    <span title="View" style="margin-right:4px;">&#128196;</span>
+                                    {% elif table.source_table_or_view == "table" %}
+                                    <span title="Table" style="margin-right:4px;">&#128202;</span>
+                                    {% endif %}
+                                    <b>{{ table.table_name }}</b> : {{ table.key_columns | join(", ") }}
+                                </span>
+
+                                <br>
+
+                                {% if table.data_transformation_rules %}
+                                    <span class="issue-warning"> <b>Data Transformation:</b> {{ table.data_transformation_rules | join(", ") }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if table.compare_sample_data_result.source_sample_set_count is number and table.compare_sample_data_result.source_sample_count is number %}
+                                    {{ "{:,}".format(table.compare_sample_data_result.source_sample_set_count) }} / {{ "{:,}".format(table.compare_sample_data_result.source_sample_count) }}
+                                    {% if table.compare_sample_data_result.source_sample_set_count and table.compare_sample_data_result.source_sample_count %}
+                                        ({{ ((table.compare_sample_data_result.source_sample_set_count / table.compare_sample_data_result.source_sample_count * 100) | round) | int }}%)
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if table.compare_sample_data_result.target_sample_set_count is number and table.compare_sample_data_result.target_sample_count is number %}
+                                    {{ "{:,}".format(table.compare_sample_data_result.target_sample_set_count) }} / {{ "{:,}".format(table.compare_sample_data_result.target_sample_count) }}
+                                    {% if table.compare_sample_data_result.target_sample_set_count and table.compare_sample_data_result.target_sample_count %}
+                                        ({{ ((table.compare_sample_data_result.target_sample_set_count / table.compare_sample_data_result.target_sample_count * 100) | round) | int }}%)
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="set-match-number">
+                                {% if table.compare_sample_data_result.matching_set_record_count is number %}
+                                    {{ "{:,}".format(table.compare_sample_data_result.matching_set_record_count) }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.source_sample_set_count is number %}
+                                    <span class="set-match-number">{{ "{:,}".format(table.compare_sample_data_result.matching_set_record_count) }}</span> / {{ "{:,}".format(table.compare_sample_data_result.source_sample_set_count) }}
+                                    {% if table.compare_sample_data_result.matching_set_record_count and table.compare_sample_data_result.source_sample_set_count %}
+                                        ({{ ((table.compare_sample_data_result.matching_set_record_count / table.compare_sample_data_result.source_sample_set_count * 100) | round) | int }}%)
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.target_sample_set_count is number %}
+                                    <span class="set-match-number">{{ "{:,}".format(table.compare_sample_data_result.matching_set_record_count) }}</span> / {{ "{:,}".format(table.compare_sample_data_result.target_sample_set_count) }}
+                                    {% if table.compare_sample_data_result.matching_set_record_count and table.compare_sample_data_result.target_sample_set_count %}
+                                        ({{ ((table.compare_sample_data_result.matching_set_record_count / table.compare_sample_data_result.target_sample_set_count * 100) | round) | int }}%)
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if table.key_columns and table.compare_sample_data_result.source_sample_set_count and table.compare_sample_data_result.target_sample_set_count %}
+                            {% if venn_diagram_html[table.unique_data_mapping_id] %}
+                                <tr>
+                                    <td></td>
+                                    <td colspan="6">
+                                        {{ venn_diagram_html[table.unique_data_mapping_id] }}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            <tr>
+                                <td></td>
+                                <td colspan="6">
+                                    <table class="inner-table">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.source_sample_set_count is number %}
+                                                        Source Set Unmatched Sample ({{ "{:,}".format(table.compare_sample_data_result.source_unmatched_keys_sample | length) }} / {{ "{:,}".format(table.compare_sample_data_result.source_sample_set_count - table.compare_sample_data_result.matching_set_record_count) }})
+                                                    {% endif %}
+                                                </th>
+                                                <th>
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number %}
+                                                        Matching Set Sample ({{ "{:,}".format(table.compare_sample_data_result.matching_keys_set_sample | length) }} / {{ "{:,}".format(table.compare_sample_data_result.matching_set_record_count) }})
+                                                    {% endif %}
+                                                </th>
+                                                <th>
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.target_sample_set_count is number%}
+                                                        Target Set Unmatched Sample ({{ "{:,}".format(table.compare_sample_data_result.target_unmatched_keys_sample | length) }} / {{ "{:,}".format(table.compare_sample_data_result.target_sample_set_count - table.compare_sample_data_result.matching_set_record_count) }})
+                                                    {% endif %}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td style="vertical-align:top;">
+                                                    {% if table.compare_sample_data_result.source_unmatched_keys_sample | length > 0 %}
+                                                        {{ table.key_columns }} <br> -------------------------------- <br>
+                                                        {{ table.compare_sample_data_result.source_unmatched_keys_sample | join(" <br><br> ") }}
+                                                    {% endif %}
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.source_sample_set_count is number and (table.compare_sample_data_result.source_unmatched_keys_sample | length) < (table.compare_sample_data_result.source_sample_set_count - table.compare_sample_data_result.matching_set_record_count | int) %}
+                                                        <br> . . .
+                                                    {% endif %}
+                                                </td>
+                                                <td style="vertical-align:top;">
+                                                    {% if table.compare_sample_data_result.matching_keys_set_sample | length > 0 %}
+                                                        {{ table.key_columns }} <br> -------------------------------- <br>
+                                                        {{ table.compare_sample_data_result.matching_keys_set_sample | join(" <br><br> ") }}
+                                                    {% endif %}
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number and (table.compare_sample_data_result.matching_keys_set_sample | length) < table.compare_sample_data_result.matching_set_record_count %}
+                                                        <br> . . .
+                                                    {% endif %}
+                                                </td>
+                                                <td style="vertical-align:top;">
+                                                    {% if table.compare_sample_data_result.target_unmatched_keys_sample | length > 0 %}
+                                                        {{ table.key_columns }} <br> -------------------------------- <br>
+                                                        {{ table.compare_sample_data_result.target_unmatched_keys_sample | join(" <br><br> ") }}
+                                                    {% endif %}
+                                                    {% if table.compare_sample_data_result.matching_set_record_count is number and table.compare_sample_data_result.target_sample_set_count is number and (table.compare_sample_data_result.target_unmatched_keys_sample | length) < (table.compare_sample_data_result.target_sample_set_count - table.compare_sample_data_result.matching_set_record_count | int) %}
+                                                        <br> . . .
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="ruleBasedValidation" class="tab-content" style="display:none;">
+        <h2>Rule Based Data Validation Results</h2>
+        {% set ns = namespace(table_index=1) %}
+        {% for table in data_match_validation_result %}
+        {% if table.compare_sample_data_result
+            and table.compare_sample_data_result.rule_based_data_validation
+        %}
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">No.</th>
+                    <th rowspan="2">Table/View Name</th>
+                    <th colspan="2" style="text-align: center;">{{ source_database }}</th>
+                    <th colspan="2" style="text-align: center;">{{ target_database }}</th>
+                </tr>
+                <tr>
+                    <th>Failed Samples</th>
+                    <th>Successful Samples</th>
+                    <th>Failed Samples</th>
+                    <th>Successful Samples</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top;">{{ ns.table_index }}</td>
+                    {% set ns.table_index = ns.table_index + 1 %}
+                    <td style="vertical-align: top;">
+                        <span
+                            title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                            {% if table.source_table_or_view == "view" %}
+                            <span title="View" style="margin-right:4px;">&#128196;</span>
+                            {% elif table.source_table_or_view == "table" %}
+                            <span title="Table" style="margin-right:4px;">&#128202;</span>
+                            {% endif %}
+
+                            {{ table.table_name }}
+                        </span>
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.rule_based_data_validation["source"]
+                        and table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples %}
+                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
+
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["source"].total_records * 100) }}%
+                            <b class="issue-fail">
+                                {{ column }}
+                            </b>
+                            ({%if table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["source"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column])}}
+                                /
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].total_records) }}):
+                            <br>
+                             {% for sample in table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples[column] %}
+                                {% if not loop.first %}, {% endif %}
+                                {% if sample | length > 30 %} <br> {% endif %}
+                                <span class="issue-fail">
+                                    {{ sample  }}
+                                </span>
+                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
+                             {% endfor %}
+
+                             <br><br> Rule Applied:
+                            <span class="issue-warning">
+                                <ul style="margin:0; padding-left:1em;">
+                                {% for k, v in table.compare_sample_data_result.rule_based_data_validation["source"].table_mapping.rule_based_data_validation[column].items() %}
+                                    <li><b>{{ k }}</b>: {{ v }}</li>
+                                {% endfor %}
+                                </ul>
+                            </span>
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.rule_based_data_validation["source"]
+                        and table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples %}
+                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
+
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["source"].total_records * 100) }}%
+                            <b
+                                title="Rule Applied:&#10;&#10;{% for k, v in table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column].items() %} - {{ k }}: {{ v|replace('\"', '\'') }}&#10;&#10;{% endfor %}"
+                            >
+                                {{ column }}
+                            </b>
+                            ({%if table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["source"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column])}}
+                                /
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].total_records) }}):
+
+                            {% if table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] %}
+                                <br>
+                                <span class="success-samples-pattern-regex-description">{{ table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] }}</span>
+                            {% endif %}
+
+                            <br>
+
+                            {% for sample in table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples[column] %}
+                                {% if not loop.first %}, {% endif %}
+                                {% if sample | length > 30 %} <br> {% endif %}
+                                <span class="issue-pass">{{ sample  }}</span>
+                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
+                             {% endfor %}
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.rule_based_data_validation["target"]
+                        and table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples %}
+                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
+
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["target"].total_records * 100) }}%
+                            <b class="issue-fail">
+                                {{ column }}
+                            </b>
+                            ({%if table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["target"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column])}}
+                                /
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].total_records) }}):
+                            <br>
+                             {% for sample in table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples[column] %}
+                                {% if not loop.first %}, {% endif %}
+                                {% if sample | length > 30 %} <br> {% endif %}
+                                <span class="issue-fail">{{ sample  }}</span>
+                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
+                             {% endfor %}
+
+                             <br><br> Rule Applied:
+                            <span class="issue-warning">
+                                <ul style="margin:0; padding-left:1em;">
+                                {% for k, v in table.compare_sample_data_result.rule_based_data_validation["target"].table_mapping.rule_based_data_validation[column].items() %}
+                                    <li><b>{{ k }}</b>: {{ v }}</li>
+                                {% endfor %}
+                                </ul>
+                            </span>
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.rule_based_data_validation["target"]
+                        and table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples %}
+                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
+
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["target"].total_records * 100) }}%
+                            <b
+                                title="Rule Applied:&#10;&#10;{% for k, v in table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column].items() %} - {{ k }}: {{ v|replace('\"', '\'') }}&#10;&#10;{% endfor %}"
+                            >
+                                {{ column }}
+                            </b>
+                            ({%if table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["target"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column])}}
+                                /
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].total_records) }}):
+
+                            {% if table.compare_sample_data_result.rule_based_data_validation['target'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] %}
+                                <br>
+                                <span class="success-samples-pattern-regex-description">{{ table.compare_sample_data_result.rule_based_data_validation['target'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] }}</span>
+                            {% endif %}
+
+                            <br>
+
+                            {% for sample in table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples[column] %}
+                                {% if not loop.first %}, {% endif %}
+                                {% if sample | length > 30 %} <br> {% endif %}
+                                <span class="issue-pass">{{ sample  }}</span>
+                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
+                             {% endfor %}
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div id="distributionBasedValidation" class="tab-content" style="display:none;">
+        <h2>Distribution Based Data Validation Results</h2>
+        {% set ns = namespace(table_index=1) %}
+        {% for table in data_match_validation_result %}
+        {% if table.compare_sample_data_result
+            and table.compare_sample_data_result.distribution_based_data_validation
+        %}
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Table/View Name</th>
+                    <th style="text-align: center;">{{ source_database }}</th>
+                    <th style="text-align: center;">{{ target_database }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top;">{{ ns.table_index }}</td>
+                    {% set ns.table_index = ns.table_index + 1 %}
+                    <td style="vertical-align: top;">
+                        <span
+                            title="{% if table.key_columns %}{{ table.key_columns|length }} Key Column(s) :&#10;{% for col in table.key_columns %}- {{ col }}&#10;{% endfor %}{% else %}No key columns{% endif %}">
+                            {% if table.source_table_or_view == "view" %}
+                            <span title="View" style="margin-right:4px;">&#128196;</span>
+                            {% elif table.source_table_or_view == "table" %}
+                            <span title="Table" style="margin-right:4px;">&#128202;</span>
+                            {% endif %}
+
+                            {{ table.table_name }}
+                        </span>
+                    </td>
+                    {% for database_type in ['source', 'target'] %}
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.distribution_based_data_validation[database_type]
+                        and table.compare_sample_data_result.distribution_based_data_validation[database_type].values_to_count
+                        and table.compare_sample_data_result.distribution_based_data_validation[database_type].values_to_count | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.distribution_based_data_validation[database_type].values_to_count %}
+                            {% if not loop.first %}-----------------------<br>{% endif %}
+                            <b>  {{ column }} </b> :   <br> <br>
+
+                            <ul style="margin:0 0 0 1.5em; padding:2px;">
+                            {% for value, result in table.compare_sample_data_result.distribution_based_data_validation[database_type].values_to_count[column].items() %}
+                                <li>
+                                    {% if result["issue"] and (result["issue"] | length > 0) %}
+                                        <span class="issue-fail" title="Expected Distribution:&#10;&#10;{% if result['value_expected_distribution'] %}{% for k, v in result['value_expected_distribution'].items() %}{{ k }}: {{ v }}&#10;{% endfor %}{% endif %}">
+                                        "{{ value }}" : {{ result["count"] }} ({{ '%.1f' % result["percentage"] }}%) <br>
+                                        {% for issue in result["issue"] %}
+                                            - <span title="{{ issue.description }}">{{ issue.issue_type }}</span> <br>
+                                        {% endfor %}
+                                        </span>
+                                    {% else %}
+                                        <span class="issue-pass" title="Expected Distribution:&#10;&#10;{% if result['value_expected_distribution'] %}{% for k, v in result['value_expected_distribution'].items() %}{{ k }}: {{ v }}&#10;{% endfor %}{% endif %}">
+                                        "{{ value }}" : {{ result["count"] }} ({{ '%.1f' % result["percentage"] }}%) <br>
+                                        </span>
+                                    {% endif %}
+                                    <br>
+                                </li>
+                            {% endfor %}
+                            </ul>
+
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <p><em>Report generated on {{ report_time }}</em></p>
+
+</body>
+
+</html>

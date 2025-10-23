@@ -1,0 +1,58 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+# from (DEV) dbo to (DEV) PYTHIA_CORE.
+database_setting:
+  source_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    index: 0 # Index (start from 0) of the database type in database_credentials_local.yml. Null or -1 means don't use index value, use name instead.
+    name: "MS_SQL_Server_DEV" # If index is null or -1, use name to identify the database credentials in database_credentials_local.yml
+    # if both index and name are provided, index will be used.
+    # if none of index and name is provided, the first entry (index 0) will be used.
+    schema: "PYTHIA_CORE" # DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata). MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    index: 1 # Index (start from 0) of the database type in database_credentials_local.yml. Null or -1 means don't use index value, use name instead.
+    name: "MS_SQL_Server_PROD" # If index is null or -1, use name to identify the database credentials in database_credentials_local.yml
+    # if none of index and name is provided, the first entry (index 0) will be used.
+    schema: "dbo" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+table_mappings:
+  # - source_table: "PYTHIA_CANCER_DIAGNOSIS"
+  #   target_table: "PYTHIA_CANCER_DIAGNOSIS"
+
+  # - source_table: "PYTHIA_CBIOPORTAL_IDENTIFIER"
+
+  - source_table: "PYTHIA_PATHOLOGY_CASE"
+    key_columns: ["CASE_NUMBER"]
+
+  # - source_table: "PYTHIA_NGS_SNV"
+  #   key_columns: ["HUGO_SYMBOL", "NGS_NCBI_BUILD_NAME", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION_NAME", "TYPE_NAME", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE_1", "TUMOR_SEQ_ALLELE_2", "HGVSC", "HGVSP_SHORT", "EXON_NUMBER", "T_REF_COUNT", "T_ALT_COUNT", "VARIANT_ALLELE_FREQUENCY", "IS_INHERITED", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE", "IS_WILD_TYPE", "BIOMARKER_NAME"]
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 4
+
+  # Sample size for data validation (null or 0 = all data)
+  sample_size: null
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_data_validation: true
+  enable_constraint_validation: false  # Future feature
+
+  # Timeout settings (seconds)
+  query_timeout: 300
+  connection_timeout: 30

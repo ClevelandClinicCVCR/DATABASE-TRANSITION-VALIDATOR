@@ -1,0 +1,110 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+# from Teradata to MS SQL Server.
+database_setting:
+  source_database:
+    type: "Teradata" # Teradata, MS_SQL_Server
+    schema: "DL_MAGIC_PROD" # DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata). MAGIC_CORE, PYTHIA_CORE (for MS_SQL_Server)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+table_mappings:
+# ensures that at least one of `source_table` or `target_table` is provided. If only one is provided, the other is set to the same value. The `key_columns` will be an empty lists if they are not provided.
+
+  # Patient Tables
+  - source_table: "PATIENT"
+    target_table: "PATIENT"
+    key_columns: ["PAT_ID", "PAT_MRN_ID", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH"]
+
+  # Trial Tables
+  - source_table: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE"]
+
+  # Treatment Tables
+  - source_table: "TREATMENT"
+    key_columns: ["NAME"]
+
+  # Cancer Tables
+  - source_table: "CANCER_DIAGNOSIS"
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 4
+
+  # Sample size for data validation (null = all data)
+  sample_size: null
+
+  number_of_set_sample_records_for_detailed_report: 5
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_row_count_validation: true
+  enable_data_validation: true
+  enable_rule_based_data_validation: true
+  enable_distribution_based_data_validation: true
+  enable_constraint_validation: false  # Future feature
+
+  # Timeout settings (seconds)
+  query_timeout: 300
+  connection_timeout: 30
+
+# Report Sorting Settings
+report_sorting_settings:
+  # summary_report:
+  #   - sort_by: "table_view_name"  # Options: "table_view_name"
+  #     sort_order: "ascending"  # Options: "ascending", "descending"
+
+  schema_report:
+    - sort_by: "severity_status"  # Options: "table_view_name", "severity_status", "source_columns_count", "target_columns_count", "missing_columns_count", "extra_columns_count"
+      sort_order: "descending"  # Options: "ascending", "descending"
+
+  row_count_report:
+    - sort_by: "severity_status"  # Options: "table_view_name", "severity_status", "source_row_count", "target_row_count", "row_count_difference_percentage"
+      sort_order: "descending"  # Options: "ascending", "descending"
+
+  data_match_report:
+    - sort_by: "severity_status"  # Options: "table_view_name", "severity_status"
+      sort_order: "descending"  # Options: "ascending", "descending"
+
+  detailed_data_match_report:
+    - sort_by: "group_name"
+      sort_order: "ascending"  # Options: "ascending", "descending"
+
+    - sort_by: "table_view_name"
+      sort_order: "ascending"  # Options: "ascending", "descending"
+
+    - sort_by: "key_columns_length"
+      sort_order: "ascending"  # Options: "ascending", "descending"
+
+# Data Transformation Rules
+data_transformation_rules:
+  - "normalize_null_nan"  # Convert null values to 'null', 'nan'
+  - "timestamp_to_date_only" # Convert datetime and timestamp to date (YYYY-MM-DD)
+  - "round_float_to_decimal:n" # Rounds a float value to n decimal places. If n is not specified, rounding to 2 decimal places.
+
+  # Below are for future use
+  - "trim_whitespace" : ["trim_whitespace_leading", "trim_whitespace_trailing"]
+  - "trim" : ["trim_whitespace", "trim_special_characters"]
+  - "lowercase"          # Convert strings to lowercase
+  - "uppercase"          # Convert strings to uppercase
+  - "remove_extra_spaces" # Remove extra spaces within strings
+  - "strip_special_characters" # Remove special characters from strings
+  - "ignore_whitespace"   # Ignore whitespace differences in string comparisons
+  - "case_insensitive"    # Perform case-insensitive comparisons
+  - "convert_boolean_to_int"   # Convert boolean values to integers (True -> 1, False -> 0)
+  - "remove_special_characters" # Remove special characters from string fields
+  - "standardize_text" : ["lowercase", "trim", "remove_extra_spaces"]
