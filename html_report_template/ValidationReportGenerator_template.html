@@ -983,22 +983,101 @@
                             <ul style="margin:0 0 0 1.5em; padding:2px;">
                             {% for value, result in table.compare_sample_data_result.distribution_based_data_validation[database_type].values_to_count[column].items() %}
                                 <li>
-                                    {% if result["issue"] and (result["issue"] | length > 0) %}
-                                        <span class="issue-fail" title="Expected Distribution:&#10;&#10;{% if result['value_expected_distribution'] %}{% for k, v in result['value_expected_distribution'].items() %}{{ k }}: {{ v }}&#10;{% endfor %}{% endif %}">
-                                        "{{ value }}" : {{ result["count"] }} ({{ '%.1f' % result["percentage"] }}%) <br>
-                                        {% for issue in result["issue"] %}
-                                            - <span title="{{ issue.description }}">{{ issue.issue_type }}</span> <br>
-                                        {% endfor %}
+                                    <div class="distribution-row">
+                                        <span
+                                            class="{% if result['issue'] and (result['issue'] | length > 0) %}issue-fail{% else %}issue-pass{% endif %} distribution-left"
+                                            title="Expected Distribution:&#10;&#10;{% if result['value_expected_distribution'] %}{% for k, v in result['value_expected_distribution'].items() %}{{ k }}: {{ v }}&#10;{% endfor %}{% endif %}"
+                                        >
+                                            "{{ value }}" :
+                                            {{ result["count"] }} / {{ table.compare_sample_data_result.distribution_based_data_validation[database_type].total_records }}
+                                            ({{ '%.1f' % result["percentage"] }}%)
+                                            <br>
+                                            {% if result["issue"] %}
+                                                {% for issue in result["issue"] %}
+                                                    - <span title="{{ issue.description }}">{{ issue.issue_type }}</span> <br>
+                                                {% endfor %}
+                                            {% endif %}
                                         </span>
-                                    {% else %}
-                                        <span class="issue-pass" title="Expected Distribution:&#10;&#10;{% if result['value_expected_distribution'] %}{% for k, v in result['value_expected_distribution'].items() %}{{ k }}: {{ v }}&#10;{% endfor %}{% endif %}">
-                                        "{{ value }}" : {{ result["count"] }} ({{ '%.1f' % result["percentage"] }}%) <br>
-                                        </span>
-                                    {% endif %}
+
+                                        <div class="distribution-right">
+                                            {% if result["min_percent"] or result["max_percent"] %}
+                                            <div id="distribution-percent-bar-div-{{ loop.index }}">
+                                                {# Draw a bar showing expected range (min_percent-max_percent) and actual percentage #}
+                                                {% set min_p = result["min_percent"] if result["min_percent"] is number else 0 %}
+                                                {% set pct = result["percentage"] if result["percentage"] is number else 0 %}
+                                                {% set max_p = result["max_percent"] if result["max_percent"] is number else 100 %}
+                                                {% set min_clamped = (0 if min_p < 0 else (100 if min_p > 100 else min_p)) %}
+                                                {% set max_clamped = (0 if max_p < 0 else (100 if max_p > 100 else max_p)) %}
+                                                {% set pct_clamped = (0 if pct < 0 else (100 if pct > 100 else pct)) %}
+                                                {% set range_width = (max_clamped - min_clamped) if max_clamped > min_clamped else 0 %}
+                                                <div class="distribution-percent-bar-container" title="Expected: {{ '%.1f' % min_clamped }}%-{{ '%.1f' % max_clamped }}% | Actual: {{ '%.1f' % pct_clamped }}%">
+                                                    {% if range_width > 0 %}
+                                                        <div class="distribution-percent-bar-range" style="left: {{ '%.2f' % min_clamped }}%; width: {{ '%.2f' % range_width }}%;"></div>
+                                                {% else %}
+                                                        <div class="distribution-percent-bar-range-point" style="left: {{ '%.2f' % min_clamped }}%; width: 2%;"></div>
+                                                    {% endif %}
+                                                    <div class="distribution-percent-bar-marker {% if pct_clamped < min_clamped or pct_clamped > max_clamped %}distribution-percent-bar-marker-out{% else %}distribution-percent-bar-marker-in{% endif %}" style="left: {{ '%.2f' % pct_clamped }}%;" aria-label="Actual {{ '%.1f' % pct_clamped }}%"></div>
+
+                                                    <div class="distribution-percent-bar-label  {% if pct_clamped < min_clamped or pct_clamped > max_clamped %}issue-fail{% else %}issue-pass{% endif %}"
+                                                        style="left: {{ '%.2f' % pct_clamped }}%;"
+                                                        title="Expected range {{ '%.1f' % min_clamped }}% to {{ '%.1f' % max_clamped }}%. Actual {{ '%.1f' % pct_clamped }}%."
+                                                    >
+                                                        {{ '%.1f' % pct_clamped }}%
+                                                    </div>
+                                                </div>
+                                                <div class="distribution-percent-sr-only">
+                                                    Expected range {{ '%.1f' % min_clamped }}% to {{ '%.1f' % max_clamped }}%. Actual {{ '%.1f' % pct_clamped }}%.
+                                                </div>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if result["min_count"] or result["max_count"] %}
+                                            <div id="count-bar-div-{{ loop.index }}">
+                                                {# Draw a bar showing expected range (min_count-max_count) and actual count #}
+                                                {% set min_c = result["min_count"] if result["min_count"] is number else None %}
+                                                {% set max_c = result["max_count"] if result["max_count"] is number else None %}
+                                                {% set actual_c = result["count"] if result["count"] is number else 0 %}
+                                                {% set scale_max = 1 %}
+                                                {% if max_c is not none and actual_c > max_c %}{% set scale_max = actual_c %}{% elif max_c is not none %}{% set scale_max = max_c %}{% elif actual_c > 0 %}{% set scale_max = actual_c %}{% endif %}
+                                                {% if min_c is not none and min_c > scale_max %}{% set scale_max = min_c %}{% endif %}
+                                                {% if scale_max <= 0 %}{% set scale_max = 1 %}{% endif %}
+                                                {% set min_pos = (min_c / scale_max * 100) if min_c is not none else None %}
+                                                {% set max_pos = (max_c / scale_max * 100) if max_c is not none else None %}
+                                                {% set actual_pos = (actual_c / scale_max * 100) if actual_c is not none else 0 %}
+                                                {% set show_range = (min_pos is not none and max_pos is not none) %}
+                                                {% set range_width = (max_pos - min_pos) if (show_range and max_pos > min_pos) else 0 %}
+                                                <div class="count-bar-container" title="Expected Count Range: {% if min_c is not none %} min {{ min_c }}{% endif %}..{% if max_c is not none %} max {{ max_c }}{% endif %} | Actual: {{ actual_c }}">
+                                                    {% if show_range %}
+                                                        {% if range_width > 0 %}
+                                                            <div class="count-bar-range" style="left: {{ '%.2f' % min_pos }}%; width: {{ '%.2f' % range_width }}%;"></div>
+                                                        {% else %}
+                                                            <div class="count-bar-range-point" style="left: {{ '%.2f' % min_pos }}%; width: 2%;"></div>
+                                                        {% endif %}
+                                                    {% elif min_pos is not none %}
+                                                        <div class="count-bar-range-point" style="left: {{ '%.2f' % min_pos }}%; width: 2%;"></div>
+                                                    {% elif max_pos is not none %}
+                                                        <div class="count-bar-range-point" style="left: {{ '%.2f' % max_pos }}%; width: 2%;"></div>
+                                                    {% endif %}
+                                                    <div class="count-bar-marker {% if (min_c is not none and actual_c < min_c) or (max_c is not none and actual_c > max_c) %}count-bar-marker-out{% else %}count-bar-marker-in{% endif %}" style="left: {{ '%.2f' % actual_pos }}%;" aria-label="Actual Count {{ actual_c }}"></div>
+
+                                                    <div
+                                                        class="count-bar-label {% if (min_c is not none and actual_c < min_c) or (max_c is not none and actual_c > max_c) %}issue-fail{% else %}issue-pass{% endif %}"
+                                                        style="left: {{ '%.2f' % actual_pos }}%;"
+                                                        title="Expected Count Range: {% if min_c is not none %} min {{ min_c }}{% endif %}..{% if max_c is not none %} max {{ max_c }}{% endif %} | Actual: {{ actual_c }}"
+                                                    >
+                                                    {{ "{:,}".format(actual_c) }}
+                                                    </div>
+                                                </div>
+                                                <div class="count-bar-sr-only">Expected count range {% if min_c is not none %}{{ min_c }}{% endif %}{% if min_c is not none and max_c is not none %} to {% endif %}{% if max_c is not none %}{{ max_c }}{% endif %}. Actual {{ "{:,}".format(actual_c) }}.</div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                     <br>
                                 </li>
                             {% endfor %}
                             </ul>
+
 
                         {% endfor %}
                         {% endif %}

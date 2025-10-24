@@ -314,3 +314,174 @@ th {
     z-index: 2;
     box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
 }
+
+/* Inline distribution row layout */
+.distribution-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1px;
+    width: 100%;
+    max-width: 520px;
+}
+
+.distribution-left {
+    flex: 1 1 auto;
+    min-width: 180px;
+    line-height: 1.2;
+}
+
+.distribution-right {
+    flex: 0 0 auto;
+}
+
+/* Distribution bar styles */
+.distribution-percent-bar-container {
+    position: relative;
+    height: 12px;
+    width: 150px;
+    background: linear-gradient(90deg, #f5f5f5 0%, #f5f5f5 100%);
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    margin: 4px 0 2px 0;
+}
+
+.distribution-percent-bar-range {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(76, 175, 80, 0.35);
+    border: 1px solid rgba(76, 175, 80, 0.6);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.distribution-percent-bar-range-point {
+    background: rgba(76, 175, 80, 0.6);
+}
+
+.distribution-percent-bar-marker {
+    position: absolute;
+    top: -8px; /* place at the top */
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid #333; /* flipped from bottom to top for downward triangle */
+    transform: translateX(-50%);
+}
+
+.distribution-percent-bar-marker-in {
+    border-top-color: #2e7d32;
+}
+
+.distribution-percent-bar-marker-out {
+    border-top-color: #d32f2f;
+}
+
+.distribution-percent-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Label above percent marker */
+.distribution-percent-bar-label {
+    position: absolute;
+    top: -25px; /* above the bar */
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    /* color: #222; */
+    background: rgba(255,255,255,0.85);
+    padding: 1px 4px;
+    line-height: 1;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Count bar styles */
+.count-bar-container {
+    position: relative;
+    height: 3px;
+    width: 150px;
+    background: #f5f8ff;
+    border: 1px solid #c3d6ec;
+    border-radius: 6px;
+    margin: 4px 0 2px 0;
+    box-sizing: border-box;
+}
+
+.count-bar-range {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(33, 150, 243, 0.30);
+    border: 1px solid rgba(33, 150, 243, 0.55);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.count-bar-range-point {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(33, 150, 243, 0.65);
+    border: 1px solid rgba(33, 150, 243, 0.8);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.count-bar-marker {
+    position: absolute;
+    top: 2px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 8px solid #333;
+    transform: translateX(-50%);
+}
+
+/* Label below count marker */
+.count-bar-label {
+    position: absolute;
+    top: 13px; /* below the bar */
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 600;
+    /* color: #080075; */
+    background: rgba(255,255,255,0.85);
+    padding: 1px 4px;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.count-bar-marker-in {
+    border-bottom-color: #1565c0;
+}
+
+.count-bar-marker-out {
+    border-bottom-color: #d32f2f;
+}
+
+.count-bar-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}

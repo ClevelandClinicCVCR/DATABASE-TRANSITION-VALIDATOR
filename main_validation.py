@@ -344,7 +344,7 @@ def main():
 if __name__ == "__main__":
     sys.argv += [
         "--config",
-        "DL_MAGIC_PROD-MAGIC_CORE tables and views8 distribution-based validation.yml",
+        "DL_MAGIC_PROD-MAGIC_CORE-test tables.yml",
         # DL_MAGIC_PROD-MAGIC_CORE-test tables.yml
         # DL_MAGIC_PROD-MAGIC_CORE tables and views8 distribution-based validation.yml
         # DL_MAGIC_PROD-MAGIC_CORE tables and views7 rule-based validation.yml
