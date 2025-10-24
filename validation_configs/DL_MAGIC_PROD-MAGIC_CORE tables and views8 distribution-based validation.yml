@@ -536,9 +536,13 @@ table_mappings:
           "0":
             or: ["false"]
             min_count: 1
+            min_percent: 3.0
+            max_percent: 10
           "1":
             or: ["true"]
             min_count: 1
+            min_percent: 90.0
+            max_percent: 97.0
 
   - source_table: "NGS_FUSION_GENE"
     group: "NGS_FUSION"
@@ -1041,10 +1045,12 @@ table_mappings:
         expected_distribution:
           "0":
             min_count: 1
-            min_percent: 80.0
+            min_percent: 75.0
+            max_percent: 95.0
           "1":
             min_count: 1
             min_percent: 5.0
+            max_percent: 25.0
 
   - source_table: "NGS_TEST_RESULT_METADATA"
     group: "NGS_TEST_RESULT"
@@ -1102,12 +1108,15 @@ table_mappings:
           "PLMI":
             min_count: 1
             min_percent: 30.0
+            max_percent: 70.0
           "Caris":
             min_count: 1
             min_percent: 20.0
+            max_percent: 60.0
           "Tempus":
             min_count: 1
             min_percent: 10.0
+            max_percent: 50.0
 
   - source_table: "NGS_TEST_RESULT_WEEKLY_COUNT_V"
     group: "NGS_TEST_RESULT"
@@ -1219,20 +1228,26 @@ table_mappings:
         expected_distribution:
           "0":
             min_count: 1
-            min_percent: 25.0
+            min_percent: 10.0
+            max_percent: 40.0
           "1":
             min_count: 1
-            min_percent: 10.0
+            min_percent: 5.0
+            max_percent: 20.0
           "2":
             min_count: 1
             min_percent: 2.0
+            max_percent: 15.0
           "3":
             min_count: 1
             min_percent: 50.0
+            max_percent: 80.0
           "6":
             min_count: 1
+            max_percent: 5.0
           "9":
             min_count: 1
+            max_percent: 3.0
 
   - source_table: "ALTERNATE_GENE_SYMBOL"
     key_columns: ["SYMBOL"]
@@ -1269,16 +1284,22 @@ table_mappings:
         expected_distribution:
           "Male":
             min_count: 1
+            max_count: 1
           "Female":
             min_count: 1
+            max_count: 1
           "Nonbinary":
             min_count: 1
+            max_count: 1
           "X":
             min_count: 1
+            max_count: 1
           "Other":
             min_count: 1
+            max_count: 2
           "Unknown":
             min_count: 1
+            max_count: 1
 
   - source_table: "GENE"
     key_columns: ["HUGO_SYMBOL", "ENTREZ_ID"]

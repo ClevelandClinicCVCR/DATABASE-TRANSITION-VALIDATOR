@@ -17,30 +17,112 @@ database_setting:
     schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
 
 table_mappings:
-  - source_table: "NGS_FUSION"
-    group: "NGS_FUSION"
-    key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
-    data_transformation_rules: ["normalize_null_nan"]
-    max_item_length_for_html_report: 200
-    max_word_length_for_html_report: 30
+  - source_table: "PATIENT_V"
+    group: "PATIENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "VITAL_STATUS", "SEX_ASSIGNED_AT_BIRTH", "RACE", "ETHNICITY", "ECOG_PERFORMANCE_STATUS"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
     rule_based_data_validation:
-      DESCRIPTION:
-        pattern: "^(?=.{10,2000}$).*"
-        pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
-        nullable: true # can be null
-      NO_CHANGE_DETECTED:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
+      VITAL_STATUS:
+        pattern: "^(Alive|Deceased)$"  # e.g., Alive, Deceased
+        pattern_regex_description: "Valid values are 'Alive' or 'Deceased'"
         nullable: false # cannot be null
+      SEX_ASSIGNED_AT_BIRTH:
+        pattern: "^(Male|Female|Choose not to disclose|Uncertain|Unknown)$"  # e.g., Male, Female, Choose not to disclose, Uncertain or Unknown
+        pattern_regex_description: "Valid values are 'Male', 'Female', 'Choose not to disclose', 'Uncertain', or 'Unknown'"
+        nullable: true # can be null
+      RACE:
+        pattern: "^(Unavailable|Black|White|Multiracial/Multicultural|Hispanic/Latino|Middle Eastern or North African|Asian|Native Hawaiian/Pacific Islander|Other|American Indian/Alaska Native|Declined)$"
+        pattern_regex_description: "Allowed values: 'Unavailable', 'Black', 'White', 'Multiracial/Multicultural', 'Hispanic/Latino', 'Middle Eastern or North African', 'Asian', 'Native Hawaiian/Pacific Islander', 'Other', 'American Indian/Alaska Native', 'Declined'"
+        nullable: true # can be null
+      ETHNICITY:
+        pattern: "^(Unavailable|Not Hispanic|Hispanic|Declined|Caucasian)$"  # e.g., Hispanic, Not Hispanic, Unavailable, Declined, Caucasian
+        pattern_regex_description: "Valid values are 'Hispanic', 'Not Hispanic', 'Unavailable', 'Declined', 'Caucasian'"
+        nullable: true # can be null
+      ECOG_PERFORMANCE_STATUS:
+        pattern: "^(?:[0-5])$"
+        pattern_regex_description: "Valid values are 0, 1, 2, 3, 4, 5"
+        nullable: true # can be null
     distribution_based_data_validation:
-      NO_CHANGE_DETECTED:
+      VITAL_STATUS:
+        expected_distribution:
+          "Alive":
+            min_count: 1
+            min_percent: 60.0
+            # max_count: 1000000
+            # max_percent: 100.0
+          "Deceased":
+            min_count: 1
+            min_percent: 20.0
+      SEX_ASSIGNED_AT_BIRTH:
+        expected_distribution:
+          "Male":
+            min_count: 1
+            min_percent: 10.0
+          "Female":
+            min_count: 1
+            min_percent: 15.0
+      RACE:
+        expected_distribution:
+          "Black":
+            min_count: 1
+            min_percent: 10.0
+          "White":
+            min_count: 1
+            min_percent: 70.0
+          "Asian":
+            min_count: 1
+            min_percent: 1.0
+      ETHNICITY:
+        expected_distribution:
+          "Hispanic":
+            min_count: 1
+            min_percent: 3.0
+          "Not Hispanic":
+            min_count: 1
+            min_percent: 80.0
+      ECOG_PERFORMANCE_STATUS:
         expected_distribution:
           "0":
-            or: ["false"]
             min_count: 1
+            min_percent: 15.0
           "1":
-            or: ["true"]
             min_count: 1
+            min_percent: 15.0
+          "2":
+            min_count: 1
+            min_percent: 5.0
+          "3":
+            min_count: 1
+            min_percent: 3.0
+          "4":
+            min_count: 1
+          "5":
+            min_count: 1
+
+  # - source_table: "NGS_FUSION"
+  #   group: "NGS_FUSION"
+  #   key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   max_item_length_for_html_report: 200
+  #   max_word_length_for_html_report: 30
+  #   rule_based_data_validation:
+  #     DESCRIPTION:
+  #       pattern: "^(?=.{10,2000}$).*"
+  #       pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
+  #       nullable: true # can be null
+  #     NO_CHANGE_DETECTED:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: false # cannot be null
+  #   distribution_based_data_validation:
+  #     NO_CHANGE_DETECTED:
+  #       expected_distribution:
+  #         "0":
+  #           or: ["false"]
+  #           min_count: 1
+  #         "1":
+  #           or: ["true"]
+  #           min_count: 1
 
   # - source_table: "NGS_TEST_RESULT_V"
   #   group: "NGS_TEST_RESULT"

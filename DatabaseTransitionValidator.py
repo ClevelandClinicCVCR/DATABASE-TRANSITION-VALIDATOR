@@ -1258,9 +1258,10 @@ class DatabaseTransitionValidator:
                                 ] += 1
                             else:
                                 for k, v in expected_distribution.items():
-                                    if v["or"] is not None and item in [
+                                    or_list = v.get("or")
+                                    if or_list is not None and item in [
                                         str(or_item).strip().lower()
-                                        for or_item in v["or"]
+                                        for or_item in or_list
                                     ]:
                                         values_to_count[column_name][k][
                                             "count"
@@ -1292,9 +1293,9 @@ class DatabaseTransitionValidator:
                 min_count = value_expected_distribution.get("min_count", None)
                 max_count = value_expected_distribution.get("max_count", None)
                 if (
-                    min_count is not None
-                    and max_count is not None
-                    and min_count > max_count
+                    (min_count is not None)
+                    and (max_count is not None)
+                    and (min_count > max_count)
                 ):
                     stats["issue"].append(
                         ValidationIssue(
@@ -1306,7 +1307,7 @@ class DatabaseTransitionValidator:
 
                 stats["min_count"] = min_count
                 stats["max_count"] = max_count
-                if min_count is not None and count < min_count:
+                if (min_count is not None) and (count < min_count):
                     stats["issue"].append(
                         ValidationIssue(
                             issue_type=f"distribution_below_min_count_{min_count}",
@@ -1314,7 +1315,7 @@ class DatabaseTransitionValidator:
                             severity=ValidationStatus.FAIL,
                         )
                     )
-                if max_count is not None and count > max_count:
+                if (max_count is not None) and (count > max_count):
                     stats["issue"].append(
                         ValidationIssue(
                             issue_type=f"distribution_above_max_count_{max_count}",
@@ -1337,9 +1338,9 @@ class DatabaseTransitionValidator:
                     "max_percent", None
                 )
                 if (
-                    min_percent is not None
-                    and max_percent is not None
-                    and min_percent > max_percent
+                    (min_percent is not None)
+                    and (max_percent is not None)
+                    and (min_percent > max_percent)
                 ):
                     stats["issue"].append(
                         ValidationIssue(
@@ -1351,7 +1352,7 @@ class DatabaseTransitionValidator:
 
                 stats["min_percent"] = min_percent
                 stats["max_percent"] = max_percent
-                if min_percent is not None and percentage < min_percent:
+                if (min_percent is not None) and (percentage < min_percent):
                     stats["issue"].append(
                         ValidationIssue(
                             issue_type=f"distribution_below_min_percent_{min_percent}",
@@ -1359,7 +1360,7 @@ class DatabaseTransitionValidator:
                             severity=ValidationStatus.FAIL,
                         )
                     )
-                if max_percent is not None and percentage > max_percent:
+                if (max_percent is not None) and (percentage > max_percent):
                     stats["issue"].append(
                         ValidationIssue(
                             issue_type=f"distribution_above_max_percent_{max_percent}",

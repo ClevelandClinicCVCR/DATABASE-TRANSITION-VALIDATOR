@@ -1001,7 +1001,7 @@
 
                                         <div class="distribution-right">
                                             {% if result["min_percent"] or result["max_percent"] %}
-                                            <div id="distribution-percent-bar-div-{{ loop.index }}">
+                                            <div>
                                                 {# Draw a bar showing expected range (min_percent-max_percent) and actual percentage #}
                                                 {% set min_p = result["min_percent"] if result["min_percent"] is number else 0 %}
                                                 {% set pct = result["percentage"] if result["percentage"] is number else 0 %}
@@ -1032,7 +1032,7 @@
                                             {% endif %}
 
                                             {% if result["min_count"] or result["max_count"] %}
-                                            <div id="count-bar-div-{{ loop.index }}">
+                                            <div>
                                                 {# Draw a bar showing expected range (min_count-max_count) and actual count #}
                                                 {% set min_c = result["min_count"] if result["min_count"] is number else None %}
                                                 {% set max_c = result["max_count"] if result["max_count"] is number else None %}
