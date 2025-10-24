@@ -1243,24 +1243,29 @@ class DatabaseTransitionValidator:
                         item_data_is_none = item_data is None or pd.isna(
                             item_data
                         )
-                        normalized_item_with_dot_0 = (
-                            normalize_item_data_end_with_dot_0(
-                                item_data
-                            ).lower()
-                        )  # distribution comparison is case insensitive
+                        item = normalize_item_data_end_with_dot_0(
+                            item_data
+                        ).lower()  # distribution comparison is case insensitive
+
                         if "null" in values_to_count[column_name] and (
-                            item_data is None
-                            or item_data_is_none
-                            or text_mean_none(normalized_item_with_dot_0)
+                            item_data_is_none or text_mean_none(item)
                         ):
                             values_to_count[column_name]["null"]["count"] += 1
-                        elif (
-                            normalized_item_with_dot_0
-                            in values_to_count[column_name]
-                        ):
-                            values_to_count[column_name][
-                                normalized_item_with_dot_0
-                            ]["count"] += 1
+                        else:
+                            if item in values_to_count[column_name]:
+                                values_to_count[column_name][item][
+                                    "count"
+                                ] += 1
+                            else:
+                                for k, v in expected_distribution.items():
+                                    if v["or"] is not None and item in [
+                                        str(or_item).strip().lower()
+                                        for or_item in v["or"]
+                                    ]:
+                                        values_to_count[column_name][k][
+                                            "count"
+                                        ] += 1
+                                        break
                 elif key.lower() == "min_items_count":
                     min_items_count = int(value)
                 elif key.lower() == "max_items_count":
@@ -1278,6 +1283,10 @@ class DatabaseTransitionValidator:
                     value_expected_distribution
                 )
                 stats["issue"] = []
+                stats["or"] = value_expected_distribution.get(
+                    "or", None
+                )  # List of alternative values
+
                 count = stats.get("count", 0)
 
                 min_count = value_expected_distribution.get("min_count", None)

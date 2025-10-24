@@ -17,74 +17,129 @@ database_setting:
     schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
 
 table_mappings:
-  - source_table: "NGS_CNV"
-    group: "NGS_CNV"
-    key_columns: ["NUMERIC_VALUE", "REFSEQ", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int", "IS_INHERITED -> int", "IS_PATHOGENIC -> int", "IS_ACTIONABLE -> int", "IS_LOW_COVERAGE_AMPLICON -> int"]
+  - source_table: "NGS_FUSION"
+    group: "NGS_FUSION"
+    key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
     data_transformation_rules: ["normalize_null_nan"]
+    max_item_length_for_html_report: 200
+    max_word_length_for_html_report: 30
     rule_based_data_validation:
-      NUMERIC_VALUE:
-        pattern: "^\\d+(\\.\\d+)?$"
-        pattern_regex_description: "One or more digits (0-9) followed by an optional decimal point and more digits"
+      DESCRIPTION:
+        pattern: "^(?=.{10,2000}$).*"
+        pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
         nullable: true # can be null
-      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+      NO_CHANGE_DETECTED:
         pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
         pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
-      IS_WILD_TYPE:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
-      IS_INHERITED:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
-      IS_PATHOGENIC:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
-      IS_ACTIONABLE:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
-      IS_LOW_COVERAGE_AMPLICON:
-        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-        pattern_regex_description: "Binary values: 0, 1, true, false"
-        nullable: true # can be null
+        nullable: false # cannot be null
     distribution_based_data_validation:
-      IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+      NO_CHANGE_DETECTED:
         expected_distribution:
           "0":
+            or: ["false"]
             min_count: 1
-            max_count: 200
-            min_percent: 10.0
-            max_percent: 40.0
           "1":
-            min_count: 2  # VUS may have some “1” values for CNV from Caris's report
-      IS_WILD_TYPE:
-        expected_distribution:
-          "0":
-            min_count: 100
-            max_count: 300
-            min_percent: 40.0
-          "1":
+            or: ["true"]
             min_count: 1
-      IS_INHERITED:
-        expected_distribution:
-          "1":
-            min_count: 1
-      IS_PATHOGENIC:
-        expected_distribution:
-          "1":
-            min_count: 1
-      IS_ACTIONABLE:
-        expected_distribution:
-          "1":
-            min_count: 1
-            max_percent: 10.0
-      IS_LOW_COVERAGE_AMPLICON:
-        expected_distribution:
-          "1":
-            min_count: 1
+
+  # - source_table: "NGS_TEST_RESULT_V"
+  #   group: "NGS_TEST_RESULT"
+  #   key_columns: ["ACCESSION_NUMBER", "SOURCE", "PANEL_CODE", "PATHOLOGY_CASE_NUMBER"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     SOURCE:
+  #       pattern: "^(?i)(PLMI|Caris|Tempus)$"
+  #       pattern_regex_description: "PLMI or Caris or Tempus, case insensitive"
+  #       nullable: false # cannot be null
+  #     PANEL_CODE:
+  #       pattern: "^(?i)(ALL|CHIP|CMI001|CMICSR|HFS|HN|HNFS|HS50|LPD|MYL1|MYL2|RS|TOP|XE|XF|XT)$"
+  #       pattern_regex_description: "ALL, CHIP, CMI001, CMICSR, HFS, HN, HNFS, HS50, LPD, MYL1, MYL2, RS, TOP, XE, XF, or XT (case insensitive)"
+  #       nullable: true # cannot be null
+  #     PATHOLOGY_CASE_NUMBER:
+  #       pattern: "^(?i)[A-Z]{1,3}\\d{2}-\\d{1,7}$"
+  #       pattern_regex_description: "IDs with 1-3 letters prefix, a 2-digit year, a hyphen, and a 1 to 7 digits number"
+  #       nullable: true # can be null
+  #   distribution_based_data_validation:
+  #     SOURCE:
+  #       expected_distribution:
+  #         "PLMI":
+  #           min_count: 1
+  #           min_percent: 30.0
+  #         "Caris":
+  #           min_count: 1
+  #           min_percent: 20.0
+  #         "Tempus":
+  #           min_count: 1
+  #           min_percent: 10.0
+
+  # - source_table: "NGS_CNV"
+  #   group: "NGS_CNV"
+  #   key_columns: ["NUMERIC_VALUE", "REFSEQ", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int", "IS_INHERITED -> int", "IS_PATHOGENIC -> int", "IS_ACTIONABLE -> int", "IS_LOW_COVERAGE_AMPLICON -> int"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     NUMERIC_VALUE:
+  #       pattern: "^\\d+(\\.\\d+)?$"
+  #       pattern_regex_description: "One or more digits (0-9) followed by an optional decimal point and more digits"
+  #       nullable: true # can be null
+  #     IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #     IS_WILD_TYPE:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #     IS_INHERITED:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #     IS_PATHOGENIC:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #     IS_ACTIONABLE:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #     IS_LOW_COVERAGE_AMPLICON:
+  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+  #       pattern_regex_description: "Binary values: 0, 1, true, false"
+  #       nullable: true # can be null
+  #   distribution_based_data_validation:
+  #     IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
+  #       expected_distribution:
+  #         "0":
+  #           min_count: 1
+  #           max_count: 200
+  #           min_percent: 10.0
+  #           max_percent: 40.0
+  #         "1":
+  #           min_count: 2  # VUS may have some “1” values for CNV from Caris's report
+  #     IS_WILD_TYPE:
+  #       expected_distribution:
+  #         "0":
+  #           min_count: 100
+  #           max_count: 300
+  #           min_percent: 40.0
+  #         "1":
+  #           min_count: 1
+  #     IS_INHERITED:
+  #       expected_distribution:
+  #         "1":
+  #           min_count: 1
+  #     IS_PATHOGENIC:
+  #       expected_distribution:
+  #         "1":
+  #           min_count: 1
+  #     IS_ACTIONABLE:
+  #       expected_distribution:
+  #         "1":
+  #           min_count: 1
+  #           max_percent: 10.0
+  #     IS_LOW_COVERAGE_AMPLICON:
+  #       expected_distribution:
+  #         "1":
+  #           min_count: 1
 
 # Validation Settings
 validation_settings:
@@ -94,7 +149,7 @@ validation_settings:
   max_workers: 2
 
   # Sample size for data validation (null or 0 = all data)
-  sample_size: 1_000
+  sample_size: 100_000
 
   data_validation_threshold:
     success: 99.0  # Threshold for success rate (percentage)

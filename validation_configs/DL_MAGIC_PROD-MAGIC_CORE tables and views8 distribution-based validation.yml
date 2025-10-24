@@ -534,12 +534,10 @@ table_mappings:
       NO_CHANGE_DETECTED:
         expected_distribution:
           "0":
+            or: ["false"]
             min_count: 1
           "1":
-            min_count: 1
-          "true":
-            min_count: 1
-          "false":
+            or: ["true"]
             min_count: 1
 
   - source_table: "NGS_FUSION_GENE"

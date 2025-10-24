@@ -196,6 +196,16 @@ table_mappings:
         pattern_regex_description: "Starts with NCT. Followed by exactly 8 digits"
         nullable: true # can be null
         unique: true # must be unique
+    distribution_based_data_validation:
+      IS_CCF:
+        expected_distribution:
+          "0":
+            or: ["false"]
+            min_count: 1
+
+          "1":
+            or: ["true"]
+            min_count: 1
 
 validation_settings:
   output_dir: "database_validation_reports"
@@ -331,6 +341,84 @@ You can further customize the validation and reporting for each table mapping us
       max_word_length_for_html_report: 30
       number_of_set_sample_records_for_detailed_report: 10
 ```
+
+
+RULE BASED AND DISTRIBUTION BASED DATA VALIDATION
+-------------------------------------------------
+You can add advanced validation rules to your table mappings using the `rule_based_data_validation` and `distribution_based_data_validation` fields in your YAML configuration. These allow you to enforce column-level patterns, uniqueness, nullability, and expected value distributions.
+
+### rule_based_data_validation
+Use this section to specify rules for individual columns, such as regex patterns, nullability, and uniqueness. Example:
+
+```yaml
+rule_based_data_validation:
+   NCT_ID:
+      pattern: '^NCT\\d{8}$'
+      pattern_regex_description: "Starts with NCT. Followed by exactly 8 digits"
+      nullable: true   # can be null
+      unique: true     # must be unique
+```
+
+**Supported options per column:**
+- `pattern`: A regular expression string that the value must match.
+- `pattern_regex_description`: A human-readable description of the pattern (shown in reports).
+- `nullable`: If true, the value can be null; if false, nulls are considered validation failures.
+- `unique`: If true, all values in this column must be unique.
+
+You can add multiple columns under `rule_based_data_validation`, each with its own set of rules.
+
+### distribution_based_data_validation
+Use this section to specify the expected distribution of values for a column. This is useful for categorical or boolean columns where you expect certain proportions or counts for each value.
+
+Example:
+
+```yaml
+distribution_based_data_validation:
+   IS_CCF:
+      expected_distribution:
+         "0":
+            or: ["false"]
+            min_count: 1
+            max_count: 100
+            min_percent: 5.0
+            max_percent: 90.5
+         "1":
+            or: ["true"]
+            min_count: 1
+```
+
+**Supported options per value:**
+- The key (e.g., "0" or "1") is the expected value in the column.
+- `or`: A list of alternative values that are considered equivalent (e.g., "0" or "false").
+- `min_count`: The minimum number of times this value (or its alternatives) must appear in the data.
+- `max_count`: (Optional) The maximum allowed count for this value.
+- `min_percent`: (Optional) The minimum percentage of total records this value should represent.
+- `max_percent`: (Optional) The maximum percentage of total records this value should represent.
+
+You can specify as many values as needed under `expected_distribution` for each column.
+
+**Example usage in a table mapping:**
+```yaml
+table_mappings:
+   - source_table: "TRIAL"
+      rule_based_data_validation:
+         NCT_ID:
+            pattern: '^NCT\\d{8}$'
+            pattern_regex_description: "Starts with NCT. Followed by exactly 8 digits"
+            nullable: true
+            unique: true
+      distribution_based_data_validation:
+         IS_CCF:
+            expected_distribution:
+               "0":
+                  or: ["false"]
+                  min_count: 1
+               "1":
+                  or: ["true"]
+                  min_count: 1
+```
+
+These settings will be enforced during validation and reported in the HTML, CSV, and JSON outputs. For more advanced options, see the comments in the default config files or contact the tool author.
 
 
 OTHER USAGE EXAMPLES
