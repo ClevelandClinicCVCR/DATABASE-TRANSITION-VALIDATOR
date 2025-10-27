@@ -1445,28 +1445,3 @@ table_mappings:
   - source_table: "URGENT_LOGS_LAST_TWO_DAYS_V"
     key_columns: ["PIPELINE"]
     data_transformation_rules: ["normalize_null_nan"]
-
-# Validation Settings
-validation_settings:
-  output_dir: "database_validation_reports"
-
-  # Maximum number of parallel workers
-  max_workers: 2
-
-  # Sample size for data validation (dont set, or set to null or 0 = all data)
-  # sample_size: 300_000  # uncomment to limit sample size to 300,000 rows per table
-
-  data_validation_threshold:
-    success: 99.5  # Threshold for success rate (percentage)
-    warning: 97.0  # Threshold for warning (percentage)
-
-  row_count_difference_threshold:
-    success: 0.5   # Threshold for success rate (percentage)
-    warning: 3.0   # Threshold for warning (percentage)
-
-  # Enable/disable specific validation types
-  enable_schema_validation: true
-  enable_data_validation: true
-  enable_data_match_validation: true
-  enable_rule_based_data_validation: true
-  enable_distribution_based_data_validation: true

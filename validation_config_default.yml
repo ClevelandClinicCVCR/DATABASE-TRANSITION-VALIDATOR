@@ -53,7 +53,10 @@ validation_settings:
   # Enable/disable specific validation types
   enable_schema_validation: true
   enable_row_count_validation: true
+
   enable_data_validation: true
+
+  enable_data_match_validation: true
   enable_rule_based_data_validation: true
   enable_distribution_based_data_validation: true
 
@@ -66,9 +69,9 @@ validation_settings:
 
 # Report Sorting Settings
 report_sorting_settings:
-  generate_summary_report: False
-  generate_json_report: False
-  generate_csv_report: False
+  generate_summary_report: false
+  generate_json_report: false
+  generate_csv_report: false
 
   generate_html_report: true
 
