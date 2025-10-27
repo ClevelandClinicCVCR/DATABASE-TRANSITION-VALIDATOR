@@ -542,11 +542,30 @@ class ValidationReportGenerator:
                     )
                 )
 
-        source_database = build_database_description(
-            result.settings["database_setting"]["source_database"]
+        source_database = (
+            build_database_description(
+                result.settings["database_setting"]["source_database"]
+            )
+            if result.settings["database_setting"]["source_database"]
+            else "{No Source Database}"
         )
-        target_database = build_database_description(
-            result.settings["database_setting"]["target_database"]
+        target_database = (
+            build_database_description(
+                result.settings["database_setting"]["target_database"]
+            )
+            if result.settings["database_setting"]["target_database"]
+            else "{No Target Database}"
+        )
+
+        disable_rule_based_data_validation = not isinstance(
+            self.settings.get("validation_settings", {}), dict
+        ) or not self.settings["validation_settings"].get(
+            "enable_rule_based_data_validation", True
+        )
+        disable_distribution_based_data_validation = not isinstance(
+            self.settings.get("validation_settings", {}), dict
+        ) or not self.settings["validation_settings"].get(
+            "enable_distribution_based_data_validation", True
         )
 
         html_content = html_template.render(
@@ -571,22 +590,8 @@ class ValidationReportGenerator:
             data_match_validation_result=result.data_match_validation_result,
             data_match_validation_result_grouped=result.data_match_validation_result_grouped,
             schema_validation_results=result.schema_validation_results,
-            disable_rule_based_data_validation=(
-                not isinstance(
-                    self.settings.get("validation_settings", {}), dict
-                )
-                or not self.settings["validation_settings"].get(
-                    "enable_rule_based_data_validation", True
-                )
-            ),
-            disable_distribution_based_data_validation=(
-                not isinstance(
-                    self.settings.get("validation_settings", {}), dict
-                )
-                or not self.settings["validation_settings"].get(
-                    "enable_distribution_based_data_validation", True
-                )
-            ),
+            disable_rule_based_data_validation=disable_rule_based_data_validation,
+            disable_distribution_based_data_validation=disable_distribution_based_data_validation,
             report_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             template_css_content=template_css_content,
             template_script_content=template_script_content,

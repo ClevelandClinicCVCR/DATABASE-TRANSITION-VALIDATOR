@@ -7,6 +7,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from tkinter import N
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -129,34 +130,48 @@ class DatabaseTransitionValidator:
         """
 
         try:
-            inspectors = {
-                "source": {
+            source_inspectors = (
+                {
                     "inspector": inspect(self.source_config.engine),
                     "tables": [],
                     "views": [],
-                },
-                "target": {
+                }
+                if self.source_config and self.source_config.engine
+                else None
+            )
+
+            target_inspectors = (
+                {
                     "inspector": inspect(self.target_config.engine),
                     "tables": [],
                     "views": [],
-                },
+                }
+                if self.target_config and self.target_config.engine
+                else None
+            )
+
+            inspectors = {
+                "source": source_inspectors,
+                "target": target_inspectors,
             }
 
-            inspectors["source"]["tables"] = inspectors["source"][
-                "inspector"
-            ].get_table_names(schema=self.source_config.schema)
+            if source_inspectors:
+                inspectors["source"]["tables"] = inspectors["source"][
+                    "inspector"
+                ].get_table_names(schema=self.source_config.schema)
 
-            inspectors["source"]["views"] = inspectors["source"][
-                "inspector"
-            ].get_view_names(schema=self.source_config.schema)
+                inspectors["source"]["views"] = inspectors["source"][
+                    "inspector"
+                ].get_view_names(schema=self.source_config.schema)
 
-            inspectors["target"]["tables"] = inspectors["target"][
-                "inspector"
-            ].get_table_names(schema=self.target_config.schema)
+            if target_inspectors:
+                inspectors["target"]["tables"] = inspectors["target"][
+                    "inspector"
+                ].get_table_names(schema=self.target_config.schema)
 
-            inspectors["target"]["views"] = inspectors["target"][
-                "inspector"
-            ].get_view_names(schema=self.target_config.schema)
+                inspectors["target"]["views"] = inspectors["target"][
+                    "inspector"
+                ].get_view_names(schema=self.target_config.schema)
 
             return inspectors
 
@@ -260,11 +275,17 @@ class DatabaseTransitionValidator:
         try:
             # Schema validation
             if enable_schema_validation:
-                self.logger.info("Performing schema validation...")
-                schema_results = self._validate_schemas(
-                    table_mappings, max_workers
-                )
-                result.schema_validation_results = schema_results
+                if source_config is None or target_config is None:
+                    self.logger.warning(
+                        "Skipping schema validation due to missing source or target database connection."
+                    )
+                    result.schema_validation_results = None
+                else:
+                    self.logger.info("Performing schema validation...")
+                    schema_results = self._validate_schemas(
+                        table_mappings, max_workers
+                    )
+                    result.schema_validation_results = schema_results
 
             # Data validation
             if enable_data_validation:
@@ -689,13 +710,13 @@ class DatabaseTransitionValidator:
                         self.source_config, mapping.source_table
                     )
                     if source_table_exist
-                    else -1
+                    else None
                 )
             except Exception as e:
                 self.logger.warning(
                     f"Could not get row count for source table {mapping.source_table}: {e}"
                 )
-                source_count = -2
+                source_count = None
 
             try:
                 target_count = (
@@ -703,13 +724,13 @@ class DatabaseTransitionValidator:
                         self.target_config, mapping.target_table
                     )
                     if target_table_exist
-                    else -1
+                    else None
                 )
             except Exception as e:
                 self.logger.warning(
                     f"Could not get row count for target table {mapping.target_table}: {e}"
                 )
-                target_count = -2
+                target_count = None
 
         row_count_validation_issues = []
         data_match_validation_issues = []
@@ -771,9 +792,8 @@ class DatabaseTransitionValidator:
             row_count_validation_issues.append(validation_issues)
             data_match_validation_issues.append(validation_issues)
 
-        if row_count_validation_issues and not (
-            source_count is None
-            and target_count is None  # disable row count validation
+        if (source_count is None or source_count <= 0) and (
+            target_count is None or target_count <= 0
         ):
             return DataMatchValidationResult(
                 table_name=mapping.source_table,
@@ -868,13 +888,11 @@ class DatabaseTransitionValidator:
             )
 
         # Data validation
-        if (
-            (
-                source_count is None and target_count is None
-            )  # disable row count validation
-            or (source_count > 0 and target_count > 0)
-        ) and (mapping.source_table or mapping.target_table):
-
+        if source_count == 0 and target_count == 0:
+            result.status = result.status.raise_status_level_to(
+                ValidationStatus.PASS
+            )
+        else:
             if mapping.key_columns is None or len(mapping.key_columns) == 0:
                 result.data_match_validation_issues.append(
                     ValidationIssue(
@@ -939,17 +957,6 @@ class DatabaseTransitionValidator:
                 result.status = result.status.raise_status_level_to(
                     success_rate_status
                 )
-        else:
-            if (source_count == 0 and target_count == 0) or (
-                source_count is None and target_count is None
-            ):
-                result.status = result.status.raise_status_level_to(
-                    ValidationStatus.PASS
-                )
-            else:
-                result.status = result.status.raise_status_level_to(
-                    ValidationStatus.FAIL
-                )
 
         result.execution_time_seconds = time.time() - start_time
         return result
@@ -957,6 +964,9 @@ class DatabaseTransitionValidator:
     def _check_if_table_or_view_exists(
         self, db_config: DatabaseConfig, table_name: str
     ) -> Tuple[bool, str | None]:
+        if db_config is None:
+            return None, None
+
         if (
             table_name
             in self.database_inspector[db_config.source_or_target_type][
@@ -998,9 +1008,11 @@ class DatabaseTransitionValidator:
         Extract rule_based_data_validation for key columns present in table_mapping.key_columns.
         Returns a RuleBasedDataValidationResult or None if no applicable rules.
         """
+
         if (
             not hasattr(table_mapping, "rule_based_data_validation")
-            or not table_mapping.rule_based_data_validation
+            or (not table_mapping.rule_based_data_validation)
+            or data is None
         ):
             return None
 
@@ -1208,6 +1220,7 @@ class DatabaseTransitionValidator:
         if (
             not hasattr(table_mapping, "distribution_based_data_validation")
             or not table_mapping.distribution_based_data_validation
+            or data is None
         ):
             return None
 
@@ -1267,8 +1280,8 @@ class DatabaseTransitionValidator:
                                 ] += 1
                             else:
                                 for k, v in expected_distribution.items():
-                                    or_list = v.get("or")
-                                    if or_list is not None and item in [
+                                    or_list = v.get("or", [])
+                                    if item in [
                                         str(or_item).strip().lower()
                                         for or_item in or_list
                                     ]:
@@ -1393,6 +1406,7 @@ class DatabaseTransitionValidator:
         settings: Optional[Dict[str, Any]] = None,
     ) -> CompareSampleDataResult:
         """Compare sample data between source and target tables."""
+
         source_sample = pd.DataFrame()
         target_sample = pd.DataFrame()
         source_keys_set = set()
@@ -1471,16 +1485,19 @@ class DatabaseTransitionValidator:
                     "target": distribution_based_data_validation_target,
                 }
 
-            source_keys_set = build_set_from_sample_and_columns(
-                source_sample,
-                mapping.key_columns,
-                data_transformation_rules=mapping.data_transformation_rules,
-            )
-            target_keys_set = build_set_from_sample_and_columns(
-                target_sample,
-                mapping.key_columns,
-                data_transformation_rules=mapping.data_transformation_rules,
-            )
+            source_keys_set = set()
+            target_keys_set = set()
+            if source_sample is not None and target_sample is not None:
+                source_keys_set = build_set_from_sample_and_columns(
+                    source_sample,
+                    mapping.key_columns,
+                    data_transformation_rules=mapping.data_transformation_rules,
+                )
+                target_keys_set = build_set_from_sample_and_columns(
+                    target_sample,
+                    mapping.key_columns,
+                    data_transformation_rules=mapping.data_transformation_rules,
+                )
 
             matching_keys_set = source_keys_set & target_keys_set
 
@@ -1492,8 +1509,12 @@ class DatabaseTransitionValidator:
                 distribution_based_data_validation=distribution_based_data_validation,
                 table_mapping=mapping,
                 sample_size=sample_size,
-                source_sample_count=len(source_sample),
-                target_sample_count=len(target_sample),
+                source_sample_count=(
+                    len(source_sample) if source_sample is not None else 0
+                ),
+                target_sample_count=(
+                    len(target_sample) if target_sample is not None else 0
+                ),
                 source_sample_set_count=len(source_keys_set),
                 target_sample_set_count=len(target_keys_set),
                 matching_set_record_count=len(matching_keys_set),
@@ -1591,6 +1612,10 @@ class DatabaseTransitionValidator:
         sample_size: Optional[int],
     ) -> pd.DataFrame:
         """Get sample data from a table."""
+
+        if db_config is None:
+            return None
+
         with db_config.engine.connect() as conn:
             # In Teradata SQL, TYPE is a reserved keyword, so it cannot be used directly as a column name without quoting/escaping it.
             quoted_key_columns = [f'"{col}"' for col in key_columns]

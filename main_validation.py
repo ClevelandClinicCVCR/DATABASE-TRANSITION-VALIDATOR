@@ -273,12 +273,21 @@ def main():
                 settings, type="target"
             )
 
-            logger.info(
-                f"Source: {source_config.name} ({source_config.schema})"
-            )
-            logger.info(
-                f"Target: {target_config.name} ({target_config.schema})"
-            )
+            if source_config:
+                logger.info(
+                    f"Source: {source_config.name} ({source_config.schema})"
+                )
+
+            if target_config:
+                logger.info(
+                    f"Target: {target_config.name} ({target_config.schema})"
+                )
+
+            if source_config is None and target_config is None:
+                logger.error(
+                    "Both source and target database connections failed."
+                )
+                return
 
         except (
             Exception
@@ -288,8 +297,8 @@ def main():
             print(
                 message
                 + "\n----------------------\nPlease check your VPN and database connection settings."
-                + f"\nSource: {settings['database_setting']['source_database']['type']} ({settings['database_setting']['source_database']['schema']})"
-                + f"\nTarget: {settings['database_setting']['target_database']['type']} ({settings['database_setting']['target_database']['schema']})"
+                # + f"\nSource: {settings['database_setting']['source_database']['type']} ({settings['database_setting']['source_database']['schema']})"
+                # + f"\nTarget: {settings['database_setting']['target_database']['type']} ({settings['database_setting']['target_database']['schema']})"
                 + f"\n"
             )
             sys.exit(1)
@@ -301,18 +310,27 @@ def main():
 
         # Run validation
         logger.info("Starting validation process...")
+
+        max_workers = 2  # default
+        if (
+            settings["validation_settings"]
+            and int(settings["validation_settings"]["max_workers"]) > 0
+        ):
+            max_workers = int(settings["validation_settings"]["max_workers"])
+        logger.info(f"Using {max_workers} parallel workers for validation")
+
         result = validator.validate_transition(
             table_mappings=table_mappings,
-            max_workers=settings["validation_settings"]["max_workers"],
+            max_workers=max_workers,
             sample_size=settings["validation_settings"].get(
                 "sample_size", None
             ),
-            enable_schema_validation=settings["validation_settings"][
-                "enable_schema_validation"
-            ],
-            enable_data_validation=settings["validation_settings"][
-                "enable_data_validation"
-            ],
+            enable_schema_validation=settings["validation_settings"].get(
+                "enable_schema_validation", True
+            ),
+            enable_data_validation=settings["validation_settings"].get(
+                "enable_data_validation", True
+            ),
         )
 
         # Generate reports

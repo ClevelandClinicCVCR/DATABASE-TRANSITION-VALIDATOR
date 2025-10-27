@@ -793,23 +793,26 @@
                             {{ table.table_name }}
                         </span>
                     </td>
-                    <td style="vertical-align: top;">
-                        {% if table.compare_sample_data_result.rule_based_data_validation["source"]
-                        and table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples
-                        and table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples | length > 0 %}
 
-                        {% for column in table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples %}
+                    {% for database_type in ['source', 'target'] %}
+                    <td style="vertical-align: top;">
+                        {% if table.compare_sample_data_result.rule_based_data_validation[database_type]
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping is not none
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].failed_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].failed_record_samples | length > 0 %}
+
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation[database_type].failed_record_samples %}
                             {% if not loop.first %}<br>-----------------------<br>{% endif %}
 
-                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["source"].total_records * 100) }}%
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation[database_type].failed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation[database_type].total_records * 100) }}%
                             <b class="issue-fail">
                                 {{ column }}
                             </b>
-                            ({%if table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["source"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].failed_records_count[column])}}
+                            ({%if table.compare_sample_data_result.rule_based_data_validation[database_type].failed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation[database_type].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation[database_type].failed_records_count[column])}}
                                 /
-                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].total_records) }}):
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation[database_type].total_records) }}):
                             <br>
-                             {% for sample in table.compare_sample_data_result.rule_based_data_validation["source"].failed_record_samples[column] %}
+                             {% for sample in table.compare_sample_data_result.rule_based_data_validation[database_type].failed_record_samples[column] %}
                                 {% if not loop.first %}, {% endif %}
                                 {% if sample | length > 30 %} <br> {% endif %}
                                 <span class="issue-fail">
@@ -821,7 +824,7 @@
                              <br><br> Rule Applied:
                             <span class="issue-warning">
                                 <ul style="margin:0; padding-left:1em;">
-                                {% for k, v in table.compare_sample_data_result.rule_based_data_validation["source"].table_mapping.rule_based_data_validation[column].items() %}
+                                {% for k, v in table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping.rule_based_data_validation[column].items() %}
                                     <li><b>{{ k }}</b>: {{ v }}</li>
                                 {% endfor %}
                                 </ul>
@@ -830,31 +833,32 @@
                         {% endif %}
                     </td>
                     <td style="vertical-align: top;">
-                        {% if table.compare_sample_data_result.rule_based_data_validation["source"]
-                        and table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples
-                        and table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples | length > 0 %}
+                        {% if table.compare_sample_data_result.rule_based_data_validation[database_type]
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping is not none
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].success_record_samples
+                        and table.compare_sample_data_result.rule_based_data_validation[database_type].success_record_samples | length > 0 %}
 
-                        {% for column in table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples %}
+                        {% for column in table.compare_sample_data_result.rule_based_data_validation[database_type].success_record_samples %}
                             {% if not loop.first %}<br>-----------------------<br>{% endif %}
 
-                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["source"].total_records * 100) }}%
+                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation[database_type].passed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation[database_type].total_records * 100) }}%
                             <b
-                                title="Rule Applied:&#10;&#10;{% for k, v in table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column].items() %} - {{ k }}: {{ v|replace('\"', '\'') }}&#10;&#10;{% endfor %}"
+                                title="Rule Applied:&#10;&#10;{% for k, v in table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping.rule_based_data_validation[column].items() %} - {{ k }}: {{ v|replace('\"', '\'') }}&#10;&#10;{% endfor %}"
                             >
                                 {{ column }}
                             </b>
-                            ({%if table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["source"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].passed_records_count[column])}}
+                            ({%if table.compare_sample_data_result.rule_based_data_validation[database_type].passed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation[database_type].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation[database_type].passed_records_count[column])}}
                                 /
-                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["source"].total_records) }}):
+                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation[database_type].total_records) }}):
 
-                            {% if table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] %}
+                            {% if table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] %}
                                 <br>
-                                <span class="success-samples-pattern-regex-description">{{ table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] }}</span>
+                                <span class="success-samples-pattern-regex-description">{{ table.compare_sample_data_result.rule_based_data_validation[database_type].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] }}</span>
                             {% endif %}
 
                             <br>
 
-                            {% for sample in table.compare_sample_data_result.rule_based_data_validation["source"].success_record_samples[column] %}
+                            {% for sample in table.compare_sample_data_result.rule_based_data_validation[database_type].success_record_samples[column] %}
                                 {% if not loop.first %}, {% endif %}
                                 {% if sample | length > 30 %} <br> {% endif %}
                                 <span class="issue-pass">{{ sample  }}</span>
@@ -863,74 +867,7 @@
                         {% endfor %}
                         {% endif %}
                     </td>
-                    <td style="vertical-align: top;">
-                        {% if table.compare_sample_data_result.rule_based_data_validation["target"]
-                        and table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples
-                        and table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples | length > 0 %}
-
-                        {% for column in table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples %}
-                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
-
-                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["target"].total_records * 100) }}%
-                            <b class="issue-fail">
-                                {{ column }}
-                            </b>
-                            ({%if table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["target"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].failed_records_count[column])}}
-                                /
-                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].total_records) }}):
-                            <br>
-                             {% for sample in table.compare_sample_data_result.rule_based_data_validation["target"].failed_record_samples[column] %}
-                                {% if not loop.first %}, {% endif %}
-                                {% if sample | length > 30 %} <br> {% endif %}
-                                <span class="issue-fail">{{ sample  }}</span>
-                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
-                             {% endfor %}
-
-                             <br><br> Rule Applied:
-                            <span class="issue-warning">
-                                <ul style="margin:0; padding-left:1em;">
-                                {% for k, v in table.compare_sample_data_result.rule_based_data_validation["target"].table_mapping.rule_based_data_validation[column].items() %}
-                                    <li><b>{{ k }}</b>: {{ v }}</li>
-                                {% endfor %}
-                                </ul>
-                            </span>
-                        {% endfor %}
-                        {% endif %}
-                    </td>
-                    <td style="vertical-align: top;">
-                        {% if table.compare_sample_data_result.rule_based_data_validation["target"]
-                        and table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples
-                        and table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples | length > 0 %}
-
-                        {% for column in table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples %}
-                            {% if not loop.first %}<br>-----------------------<br>{% endif %}
-
-                            {{ '%.1f' % (table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column] / table.compare_sample_data_result.rule_based_data_validation["target"].total_records * 100) }}%
-                            <b
-                                title="Rule Applied:&#10;&#10;{% for k, v in table.compare_sample_data_result.rule_based_data_validation['source'].table_mapping.rule_based_data_validation[column].items() %} - {{ k }}: {{ v|replace('\"', '\'') }}&#10;&#10;{% endfor %}"
-                            >
-                                {{ column }}
-                            </b>
-                            ({%if table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column] != table.compare_sample_data_result.rule_based_data_validation["target"].total_records %}{{"{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].passed_records_count[column])}}
-                                /
-                            {% endif %}{{ "{:,}".format(table.compare_sample_data_result.rule_based_data_validation["target"].total_records) }}):
-
-                            {% if table.compare_sample_data_result.rule_based_data_validation['target'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] %}
-                                <br>
-                                <span class="success-samples-pattern-regex-description">{{ table.compare_sample_data_result.rule_based_data_validation['target'].table_mapping.rule_based_data_validation[column]["pattern_regex_description"] }}</span>
-                            {% endif %}
-
-                            <br>
-
-                            {% for sample in table.compare_sample_data_result.rule_based_data_validation["target"].success_record_samples[column] %}
-                                {% if not loop.first %}, {% endif %}
-                                {% if sample | length > 30 %} <br> {% endif %}
-                                <span class="issue-pass">{{ sample  }}</span>
-                                {% if loop.last and loop.index >= table.compare_sample_data_result.table_mapping.number_of_set_sample_records_for_detailed_report %}, ...{% endif %}
-                             {% endfor %}
-                        {% endfor %}
-                        {% endif %}
-                    </td>
+                    {% endfor %}
                 </tr>
             </tbody>
         </table>

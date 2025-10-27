@@ -63,7 +63,11 @@ class DatabaseConfigFactory:
         settings, type: Literal["source", "target"]
     ) -> DatabaseConfig:
         """Create database configuration based on settings and type ('source' or 'target')."""
-        db_type = settings["database_setting"][f"{type}_database"]["type"]
+        db_type = None
+        try:
+            db_type = settings["database_setting"][f"{type}_database"]["type"]
+        except (KeyError, TypeError) as e:
+            print(f"Missing 'type' key in {type}_database settings.")
 
         if db_type == "Teradata":
             return DatabaseConfigFactory.create_teradata_config(settings, type)
@@ -72,4 +76,5 @@ class DatabaseConfigFactory:
                 settings, type
             )
         else:
-            raise ValueError(f"Unsupported {type} database type: {db_type}")
+            print(f"Unsupported {type} database type: {db_type}")
+            return None
