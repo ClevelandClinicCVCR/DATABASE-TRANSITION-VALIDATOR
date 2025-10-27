@@ -275,7 +275,7 @@ class DatabaseTransitionValidator:
         try:
             # Schema validation
             if enable_schema_validation:
-                if source_config is None or target_config is None:
+                if self.source_config is None or self.target_config is None:
                     self.logger.warning(
                         "Skipping schema validation due to missing source or target database connection."
                     )
