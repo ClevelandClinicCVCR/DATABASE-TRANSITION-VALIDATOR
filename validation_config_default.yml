@@ -56,7 +56,9 @@ validation_settings:
   enable_data_validation: true
   enable_rule_based_data_validation: true
   enable_distribution_based_data_validation: true
-  enable_constraint_validation: false  # Future feature
+
+  # Future feature
+  enable_constraint_validation: false
 
   # Timeout settings (seconds)
   query_timeout: 300
@@ -64,6 +66,12 @@ validation_settings:
 
 # Report Sorting Settings
 report_sorting_settings:
+  generate_summary_report: False
+  generate_json_report: False
+  generate_csv_report: False
+
+  generate_html_report: true
+
   # summary_report:
   #   - sort_by: "table_view_name"  # Options: "table_view_name"
   #     sort_order: "ascending"  # Options: "ascending", "descending"

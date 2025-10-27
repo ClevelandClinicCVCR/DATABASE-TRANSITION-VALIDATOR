@@ -45,18 +45,34 @@ class ValidationReportGenerator:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         reports = {}
-        reports["json"] = self.generate_json_report(
-            result, f"validation_report_{timestamp}.json"
-        )
-        reports["csv"] = self.generate_csv_report(
-            result, f"validation_report_{timestamp}.csv"
-        )
-        reports["html"] = self.generate_html_report(
-            result, f"validation_report_{timestamp}.html"
-        )
-        reports["summary"] = self.generate_summary_report(
-            result, f"validation_summary_{timestamp}.txt"
-        )
+
+        if self.settings.get("report_sorting_settings", {}).get(
+            "generate_json_report", True
+        ):
+            reports["json"] = self.generate_json_report(
+                result, f"validation_report_{timestamp}.json"
+            )
+
+        if self.settings.get("report_sorting_settings", {}).get(
+            "generate_csv_report", True
+        ):
+            reports["csv"] = self.generate_csv_report(
+                result, f"validation_report_{timestamp}.csv"
+            )
+
+        if self.settings.get("report_sorting_settings", {}).get(
+            "generate_html_report", True
+        ):
+            reports["html"] = self.generate_html_report(
+                result, f"validation_report_{timestamp}.html"
+            )
+
+        if self.settings.get("report_sorting_settings", {}).get(
+            "generate_summary_report", True
+        ):
+            reports["summary"] = self.generate_summary_report(
+                result, f"validation_summary_{timestamp}.txt"
+            )
 
         # Print summary
         print("\n" + "=" * 60)
