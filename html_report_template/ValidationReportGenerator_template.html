@@ -54,7 +54,7 @@
         <button class="tab-button{% if not schema_validation_results %} disabled-tab{% endif %}"
                 onclick="showTab('schemaTab')" {% if not schema_validation_results %}disabled title="User has disabled the schema validation"{% endif %}>
             {% if not schema_validation_results %}
-                <span class="skip-tab" title="Skip Schema Validation">&#10006; Schema</span>
+                <span class="skip-tab" title="Skip Schema Validation">Schema</span>
             {% else %}
                 Schema
 
@@ -69,7 +69,7 @@
         <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('rowCountTab')"
         {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
             {% if not data_match_validation_result %}
-                <span class="skip-tab" title="Skip Data Validation">&#10006; Row Count</span>
+                <span class="skip-tab" title="Skip Data Validation">Row Count</span>
             {% else %}
                 Row Count
 
@@ -81,10 +81,10 @@
             {% endif %}
         </button>
 
-        <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('dataTab')"
-        {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
-            {% if not data_match_validation_result %}
-                <span class="skip-tab" title="Skip Data Validation">&#10006; Data Match</span>
+        <button class="tab-button{% if not data_match_validation_result or disable_data_match_validation %} disabled-tab{% endif %}" onclick="showTab('dataTab')"
+        {% if not data_match_validation_result or disable_data_match_validation %}disabled title="Disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result  or disable_data_match_validation%}
+                <span class="skip-tab" title="Skip Data Validation">Data Match</span>
             {% else %}
                 Data Match
 
@@ -96,10 +96,10 @@
             {% endif %}
         </button>
 
-        <button class="tab-button{% if not data_match_validation_result %} disabled-tab{% endif %}" onclick="showTab('dataTabDetail')"
-        {% if not data_match_validation_result %}disabled title="User has disabled the data match validation"{% endif %} >
-            {% if not data_match_validation_result %}
-                <span class="skip-tab" title="Skip Data Validation">&#10006; Detailed Data Match</span>
+        <button class="tab-button{% if not data_match_validation_result or disable_data_match_validation%} disabled-tab{% endif %}" onclick="showTab('dataTabDetail')"
+        {% if not data_match_validation_result or disable_data_match_validation%}disabled title="Disabled the data match validation"{% endif %} >
+            {% if not data_match_validation_result  or disable_data_match_validation%}
+                <span class="skip-tab" title="Skip Data Validation">Detailed Data Match</span>
             {% else %}
                 Detailed Data Match
 
@@ -771,10 +771,18 @@
                     <th colspan="2" style="text-align: center;">{{ target_database }}</th>
                 </tr>
                 <tr>
-                    <th>Failed Samples</th>
-                    <th>Successful Samples</th>
-                    <th>Failed Samples</th>
-                    <th>Successful Samples</th>
+                    {% for database_type in ['source', 'target'] %}
+                        <th>
+                            {% if table.compare_sample_data_result.rule_based_data_validation[database_type] is not none %}
+                            Failed Samples
+                            {% endif %}
+                        </th>
+                        <th>
+                            {% if table.compare_sample_data_result.rule_based_data_validation[database_type] is not none %}
+                            Successful Samples
+                            {% endif %}
+                        </th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>

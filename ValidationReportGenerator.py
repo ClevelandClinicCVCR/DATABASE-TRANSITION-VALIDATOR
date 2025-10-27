@@ -568,6 +568,23 @@ class ValidationReportGenerator:
             "enable_distribution_based_data_validation", True
         )
 
+        disable_data_match_validation = (
+            True
+            if result.settings.get("validation_settings", {}).get(
+                "enable_data_match_validation", True
+            )
+            == False
+            or result.settings.get("database_setting", {}).get(
+                "source_database", None
+            )
+            == None
+            or result.settings.get("database_setting", {}).get(
+                "target_database", None
+            )
+            == None
+            else False
+        )
+
         html_content = html_template.render(
             validation_id=result.validation_id,
             source_database=source_database,
@@ -590,6 +607,7 @@ class ValidationReportGenerator:
             data_match_validation_result=result.data_match_validation_result,
             data_match_validation_result_grouped=result.data_match_validation_result_grouped,
             schema_validation_results=result.schema_validation_results,
+            disable_data_match_validation=disable_data_match_validation,
             disable_rule_based_data_validation=disable_rule_based_data_validation,
             disable_distribution_based_data_validation=disable_distribution_based_data_validation,
             report_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

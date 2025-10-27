@@ -49,15 +49,15 @@ table_mappings:
   #   key_columns: ["PAT_ID", "VITAL_STATUS", "LAST_ENCOUNTER_DATE", "ICD_O_SITE_CODE", "ICD_O_SITE_CODE_PREFIX", "ICD_O_MORPHOLOGY_CODE", "DIAGNOSIS_SOURCE"]
   #   data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
 
-  - source_table: "PATIENT_CANCER_DIAGNOSIS_V"
-    group: "PATIENT_CANCER_DIAGNOSIS"
-    key_columns: ["PAT_ID"]
-    data_transformation_rules: ["normalize_null_nan"]
-    rule_based_data_validation:
-      PAT_ID:
-        nullable: false # cannot be null
-        unique: true # must be unique
-        pattern_regex_description: "Accept any format but have to be unique and not null"
+  # - source_table: "PATIENT_CANCER_DIAGNOSIS_V"
+  #   group: "PATIENT_CANCER_DIAGNOSIS"
+  #   key_columns: ["PAT_ID"]
+  #   data_transformation_rules: ["normalize_null_nan"]
+  #   rule_based_data_validation:
+  #     PAT_ID:
+  #       nullable: false # cannot be null
+  #       unique: true # must be unique
+  #       pattern_regex_description: "Accept any format but have to be unique and not null"
 
   # - source_table: "PATIENT_V"
   #   group: "PATIENT"
@@ -141,30 +141,30 @@ table_mappings:
   #         "5":
   #           min_count: 1
 
-  # - source_table: "NGS_FUSION"
-  #   group: "NGS_FUSION"
-  #   key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
-  #   data_transformation_rules: ["normalize_null_nan"]
-  #   max_item_length_for_html_report: 200
-  #   max_word_length_for_html_report: 30
-  #   rule_based_data_validation:
-  #     DESCRIPTION:
-  #       pattern: "^(?=.{10,2000}$).*"
-  #       pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
-  #       nullable: true # can be null
-  #     NO_CHANGE_DETECTED:
-  #       pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
-  #       pattern_regex_description: "Binary values: 0, 1, true, false"
-  #       nullable: false # cannot be null
-  #   distribution_based_data_validation:
-  #     NO_CHANGE_DETECTED:
-  #       expected_distribution:
-  #         "0":
-  #           or: ["false"]
-  #           min_count: 1
-  #         "1":
-  #           or: ["true"]
-  #           min_count: 1
+  - source_table: "NGS_FUSION"
+    group: "NGS_FUSION"
+    key_columns: ["DESCRIPTION", "NO_CHANGE_DETECTED"]
+    data_transformation_rules: ["normalize_null_nan"]
+    max_item_length_for_html_report: 200
+    max_word_length_for_html_report: 30
+    rule_based_data_validation:
+      DESCRIPTION:
+        pattern: "^(?=.{10,2000}$).*"
+        pattern_regex_description: "Length between 10 and 2000 any characters (including spaces, punctuation, etc.)"
+        nullable: true # can be null
+      NO_CHANGE_DETECTED:
+        pattern: "^(0|1|[Tt]rue|[Ff]alse)$"
+        pattern_regex_description: "Binary values: 0, 1, true, false"
+        nullable: false # cannot be null
+    distribution_based_data_validation:
+      NO_CHANGE_DETECTED:
+        expected_distribution:
+          "0":
+            or: ["false"]
+            min_count: 1
+          "1":
+            or: ["true"]
+            min_count: 1
 
   # - source_table: "NGS_TEST_RESULT_V"
   #   group: "NGS_TEST_RESULT"
@@ -288,7 +288,10 @@ validation_settings:
   # Enable/disable specific validation types
   enable_schema_validation: false
   enable_row_count_validation: true
+
   enable_data_validation: true
+
+  enable_data_match_validation: true
   enable_rule_based_data_validation: true
   enable_distribution_based_data_validation: true
 
