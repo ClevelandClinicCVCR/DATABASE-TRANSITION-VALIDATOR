@@ -1031,6 +1031,17 @@ class DatabaseTransitionValidator:
             if column_data is None:
                 continue
 
+            # if filtered_rules[column_name] dont have pattern key, add the pattern: "^.*$" # any string and pattern_regex_description: "Accept any value"
+            if "pattern" not in filtered_rules[column_name]:
+                filtered_rules[column_name]["pattern"] = "^.*$"  # any string
+                if (
+                    "pattern_regex_description"
+                    not in filtered_rules[column_name]
+                ):
+                    filtered_rules[column_name][
+                        "pattern_regex_description"
+                    ] = "Accept any format"
+
             # Determine if value cannot be null based on 'nullable' rule
             nullable_rule = filtered_rules[column_name].get("nullable", None)
             if nullable_rule is not None:
@@ -1072,27 +1083,25 @@ class DatabaseTransitionValidator:
                         item_data_is_none = item_data is None or pd.isna(
                             item_data
                         )
-                        normalized_item_with_dot_0 = (
+                        normalized_item_data = (
                             normalize_item_data_end_with_dot_0(item_data)
                         )
                         if (
                             item_data is None
                             or item_data_is_none
-                            or text_mean_none(normalized_item_with_dot_0)
+                            or text_mean_none(normalized_item_data)
                         ) and value_can_be_null:
-                            matched_set.add(normalized_item_with_dot_0)
+                            matched_set.add(normalized_item_data)
                         elif (value_must_be_unique) and (
-                            normalized_item_with_dot_0 in matched_set
+                            normalized_item_data in matched_set
                         ):
-                            non_matched_set.add(normalized_item_with_dot_0)
+                            non_matched_set.add(normalized_item_data)
                             failed_records_count[column_name] += 1
-                        elif not regex.fullmatch(
-                            str(normalized_item_with_dot_0)
-                        ):
-                            non_matched_set.add(normalized_item_with_dot_0)
+                        elif not regex.fullmatch(str(normalized_item_data)):
+                            non_matched_set.add(normalized_item_data)
                             failed_records_count[column_name] += 1
                         else:
-                            matched_set.add(normalized_item_with_dot_0)
+                            matched_set.add(normalized_item_data)
                     if non_matched_set:
                         failed_set[column_name] = non_matched_set
                     if matched_set:
