@@ -1278,10 +1278,6 @@ table_mappings:
         nullable: false # cannot be null
         unique: true  # values must be unique
         pattern_regex_description: "Have to be unique and not null"
-      PAT_ID:
-        nullable: false # cannot be null
-        unique: true  # values must be unique
-        pattern_regex_description: "Have to be unique and not null"
 
   - source_table: "CANCER_TYPE"
     group: "CANCER"
