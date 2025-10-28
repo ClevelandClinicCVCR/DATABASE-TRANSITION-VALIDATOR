@@ -290,6 +290,21 @@ table_mappings:
         nullable: false # cannot be null
         unique: true # must be unique
 
+  - source_table: "TRIAL"
+    group: "TRIAL"
+    key_columns: ["NCT_ID", "PRMC_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL"
+    group: "TRIAL"
+    key_columns: ["NCT_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "TRIAL"
+    group: "TRIAL"
+    key_columns: ["PRMC_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "TRIAL_V"
     group: "TRIAL"
     key_columns: ["NCT_ID", "PRMC_ID", "TRIAL_TITLE", "PHASES"]
@@ -714,6 +729,11 @@ table_mappings:
     key_columns: ["ACCESSION_NUMBER", "NO_CHANGE_DETECTED", "GENE_1_HUGO_SYMBOL", "GENE_1_EXON", "GENE_1_REFSEQ", "GENE_1_CHROMOSOME", "GENE_1_START_POSITION", "GENE_1_STRAND", "GENE_2_HUGO_SYMBOL", "GENE_2_EXON", "GENE_2_REFSEQ", "GENE_2_CHROMOSOME", "GENE_2_START_POSITION", "GENE_2_STRAND"]
     data_transformation_rules: ["normalize_null_nan"]
 
+  - source_table: "NGS_FUSION_V"
+    group: "NGS_FUSION"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "NGS_GLOBAL_ALTERATION"
     group: "NGS_GLOBAL_ALTERATION"
     key_columns: ["ASSAY_RESULT", "NUMERIC_VALUE"]
@@ -747,6 +767,11 @@ table_mappings:
     group: "NGS_GLOBAL_ALTERATION"
     key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "GLOBAL_ALTERATION_TYPE", "ASSAY_RESULT", "NUMERIC_VALUE"]
     data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_GLOBAL_ALTERATION_V"
+    group: "NGS_GLOBAL_ALTERATION"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "NGS_IHC"
     group: "NGS_IHC"
@@ -785,6 +810,11 @@ table_mappings:
   - source_table: "NGS_IHC_V"
     group: "NGS_IHC"
     key_columns: ["ACCESSION_NUMBER", "PROTEIN_ALIAS", "BIOMARKER", "HUGO_SYMBOL", "ASSAY_RESULT", "INTENSITY", "PERCENTAGE"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "NGS_IHC_V"
+    group: "NGS_IHC"
+    key_columns: ["ACCESSION_NUMBER"]
     data_transformation_rules: ["normalize_null_nan"]
 
   # - source_table: "NGS_RNASEQ"
@@ -963,16 +993,14 @@ table_mappings:
       GENOTYPE:
         expected_distribution:
           "0/0":
-            min_count: 1
+            max_count: 1
           "0/1":
             min_count: 1
             min_percent: 1.5
           "1/1":
             min_count: 1
           "1/2":
-            min_count: 1
-          "2/2":
-            min_count: 1
+            max_count: 1
       IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE:
         expected_distribution:
           "0":
@@ -1031,6 +1059,11 @@ table_mappings:
     key_columns: ["ACCESSION_NUMBER", "HUGO_SYMBOL", "BIOMARKER", "NCBI_BUILD", "CHROMOSOME", "START_POSITION", "END_POSITION", "STRAND", "CLASSIFICATION", "TYPE", "REFERENCE_ALLELE", "TUMOR_SEQ_ALLELE1", "TUMOR_SEQ_ALLELE2", "HGVSC", "HGVSP_SHORT", "EXON", "T_REF_COUNT", "T_ALT_COUNT", "VARIANT_ALLELE_FREQUENCY", "GENOTYPE", "IS_VARIANT_OF_UNKNOWN_SIGNIFICANCE -> int", "IS_WILD_TYPE -> int"]
     data_transformation_rules: ["normalize_null_nan"]
 
+  - source_table: "NGS_SNV_V"
+    group: "NGS_SNV"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "NGS_TEST_RESULT"
     group: "NGS_TEST_RESULT"
     key_columns: ["ACCESSION_NUMBER", "IS_QNS -> int"]
@@ -1051,6 +1084,11 @@ table_mappings:
             min_count: 1
             min_percent: 5.0
             max_percent: 25.0
+
+  - source_table: "NGS_TEST_RESULT"
+    group: "NGS_TEST_RESULT"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "NGS_TEST_RESULT_METADATA"
     group: "NGS_TEST_RESULT"
@@ -1143,6 +1181,11 @@ table_mappings:
     key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT", "NUMERIC_VALUE"]
     data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
 
+  - source_table: "NGS_MMR_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "NGS_MSI_V"
     group: "NGS"
     key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "ASSAY_RESULT", "NUMERIC_VALUE"]
@@ -1153,6 +1196,11 @@ table_mappings:
     key_columns: ["ACCESSION_NUMBER", "ASSAY_RESULT", "NUMERIC_VALUE"]
     data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
 
+  - source_table: "NGS_MSI_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "NGS_TMB_V"
     group: "NGS"
     key_columns: ["ACCESSION_NUMBER", "MRN", "PATIENT_FIRST_NAME", "PATIENT_LAST_NAME", "NUMERIC_VALUE"]
@@ -1162,6 +1210,11 @@ table_mappings:
     group: "NGS"
     key_columns: ["ACCESSION_NUMBER", "NUMERIC_VALUE"]
     data_transformation_rules: ["normalize_null_nan", "round_float_to_decimal:2"]
+
+  - source_table: "NGS_TMB_V"
+    group: "NGS"
+    key_columns: ["ACCESSION_NUMBER"]
+    data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "UNMATCHED_NGS_TEST_RESULT_V"
     group: "NGS_TEST_RESULT"
@@ -1174,9 +1227,19 @@ table_mappings:
     key_columns: ["Hugo_Symbol", "Chromosome", "Start_Position", "End_Position", "Variant_Type", "Reference_Allele", "Tumor_Seq_Allele1", "Tumor_Seq_Allele2", "HGVSp_Short", "EXON"]
     data_transformation_rules: ["normalize_null_nan"]
 
+  - source_table: "MUTATION_ANNOTATION_CARIS_720"
+    group: "MUTATION_ANNOTATION"
+    key_columns: ["Hugo_Symbol"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "MUTATION_ANNOTATION_CARIS_720_SILENT"
     group: "MUTATION_ANNOTATION"
     key_columns: ["Hugo_Symbol", "Chromosome", "Start_Position", "End_Position", "Variant_Type", "Reference_Allele", "Tumor_Seq_Allele1", "Tumor_Seq_Allele2", "HGVSp_Short", "EXON"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "MUTATION_ANNOTATION_CARIS_720_SILENT"
+    group: "MUTATION_ANNOTATION"
+    key_columns: ["Hugo_Symbol"]
     data_transformation_rules: ["normalize_null_nan"]
 
   # Translation Tables
@@ -1210,6 +1273,21 @@ table_mappings:
     group: "CANCER"
     key_columns: ["Case_ID", "PAT_ID"]
     data_transformation_rules: ["normalize_null_nan"]
+    rule_based_data_validation:
+      Case_ID:
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+        pattern_regex_description: "Have to be unique and not null"
+      PAT_ID:
+        nullable: false # cannot be null
+        unique: true  # values must be unique
+        pattern_regex_description: "Have to be unique and not null"
+
+  - source_table: "CANCER_TYPE"
+    group: "CANCER"
+    key_columns: ["Case_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
 
   - source_table: "ICD_O_MORPHOLOGY"
     key_columns: ["MORPHOLOGY_CODE", "BEHAVIOR_CODE", "DESCRIPTION"]
@@ -1342,6 +1420,7 @@ table_mappings:
 
   - source_table: "PATHOLOGY_CASE"
     key_columns: ["CASE_NUMBER"]
+    number_of_set_sample_records_for_detailed_report: 10
     data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "PIPELINE_LOG"
@@ -1381,6 +1460,11 @@ table_mappings:
         pattern: "^[A-Z]$"
         pattern_regex_description: "A single uppercase letter (A-Z)"
         nullable: false # cannot be null
+
+  - source_table: "SPECIMEN"
+    group: "Specimen"
+    key_columns: ["SPEC_NUMBER_LN1"]
+    data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "SPECIMEN_BLOCK"
     group: "Specimen"
