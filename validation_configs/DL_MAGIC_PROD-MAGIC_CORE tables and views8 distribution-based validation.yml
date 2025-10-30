@@ -1277,7 +1277,6 @@ table_mappings:
       Case_ID:
         nullable: false # cannot be null
         unique: true  # values must be unique
-        pattern_regex_description: "Have to be unique and not null"
 
   - source_table: "CANCER_TYPE"
     group: "CANCER"
@@ -1525,3 +1524,41 @@ table_mappings:
   - source_table: "URGENT_LOGS_LAST_TWO_DAYS_V"
     key_columns: ["PIPELINE"]
     data_transformation_rules: ["normalize_null_nan"]
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 2
+
+  # Sample size for data validation (null = all data)
+  sample_size: null
+
+  number_of_set_sample_records_for_detailed_report: 5
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_row_count_validation: true
+
+  enable_data_validation: true
+
+  enable_data_match_validation: true
+  enable_rule_based_data_validation: true
+  enable_distribution_based_data_validation: true
+
+  # Future feature
+  enable_constraint_validation: false
+
+  # Timeout settings (seconds)
+  query_timeout: 300
+  connection_timeout: 30
+

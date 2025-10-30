@@ -1043,17 +1043,6 @@ class DatabaseTransitionValidator:
             if column_data is None:
                 continue
 
-            # if filtered_rules[column_name] dont have pattern key, add the pattern: "^.*$" # any string and pattern_regex_description: "Accept any value"
-            if "pattern" not in filtered_rules[column_name]:
-                filtered_rules[column_name]["pattern"] = "^.*$"  # any string
-                if (
-                    "pattern_regex_description"
-                    not in filtered_rules[column_name]
-                ):
-                    filtered_rules[column_name][
-                        "pattern_regex_description"
-                    ] = "Accept any format"
-
             # Determine if value cannot be null based on 'nullable' rule
             nullable_rule = filtered_rules[column_name].get("nullable", None)
             if nullable_rule is not None:
@@ -1079,6 +1068,31 @@ class DatabaseTransitionValidator:
                 value_must_be_unique = (
                     False  # Default to False if not specified
                 )
+
+            # if filtered_rules[column_name] dont have pattern key, add the pattern: "^.*$" # any string and pattern_regex_description: "Accept any value"
+            if "pattern" not in filtered_rules[column_name]:
+                filtered_rules[column_name]["pattern"] = "^.*$"  # any string
+                if (
+                    "pattern_regex_description"
+                    not in filtered_rules[column_name]
+                ):
+                    pattern_regex_description = "Accept any value"
+
+                    if value_must_be_unique or not value_can_be_null:
+                        unique_and_not_null_desc = []
+                        if value_must_be_unique:
+                            unique_and_not_null_desc.append(
+                                "Have to be unique"
+                            )
+                        if not value_can_be_null:
+                            unique_and_not_null_desc.append("not null")
+                        pattern_regex_description += (
+                            f" ({' and '.join(unique_and_not_null_desc)})"
+                        )
+
+                    filtered_rules[column_name][
+                        "pattern_regex_description"
+                    ] = pattern_regex_description
 
             for key in filtered_rules[column_name]:
                 value = filtered_rules[column_name][key]
