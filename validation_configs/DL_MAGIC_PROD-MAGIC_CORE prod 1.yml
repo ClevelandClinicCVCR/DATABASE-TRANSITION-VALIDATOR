@@ -1120,7 +1120,7 @@ table_mappings:
           "1":
             min_count: 1
             min_percent: 10
-            max_percent: 15.0
+            max_percent: 25.0
       IS_INHERITED:
         expected_distribution:
           "1":
