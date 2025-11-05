@@ -366,18 +366,18 @@ if __name__ == "__main__":
         # MAGIC_CORE Dev-Prod-test tables.yml
         # MAGIC_CORE Dev-Prod.yml
         # --------------------------------------
-        # DL_MAGIC_PROD-MAGIC_CORE prod 1.yml
+        # DL_MAGIC_PROD-MAGIC_CORE PROD 1.yml
         # --------------------------------------
-        # DL_MAGIC_PROD-MAGIC_CORE-test tables.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views8 distribution-based validation.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views7 rule-based validation.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views6 timestamp_to_date_only.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views5 normalize null nan.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views4 cast boolean to int.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views3 group to show multiple key_column set.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views2 remove perfectly matched tables.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views1 remove the missing tables.yml
-        # DL_MAGIC_PROD-MAGIC_CORE tables and views.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV-test tables.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 8 distribution-based validation.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 7 rule-based validation.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 6 timestamp_to_date_only.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 5 normalize null nan.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 4 cast boolean to int.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 3 group to show multiple key_column set.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 2 remove perfectly matched tables.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV 1 remove the missing tables.yml
+        # DL_MAGIC_PROD-MAGIC_CORE DEV.yml
         # DL_MAGIC_PROD-MAGIC_CORE views.yml
         # DL_MAGIC_PROD-MAGIC_CORE tables.yml
         # --------------------------------------
