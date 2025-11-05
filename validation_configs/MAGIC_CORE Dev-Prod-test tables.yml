@@ -1,0 +1,127 @@
+# Database Transition Validation Configuration
+#
+# This file contains table mappings for validating data migration
+# from Teradata to MS SQL Server.
+database_setting:
+  source_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    name: "MS_SQL_Server_DEV" # MS_SQL_Server_PROD, MS_SQL_Server_DEV
+    schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+  target_database:
+    type: "MS_SQL_Server" # Teradata, MS_SQL_Server
+    name: "MS_SQL_Server_PROD" # MS_SQL_Server_PROD, MS_SQL_Server_DEV
+    schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
+
+table_mappings:
+  - source_table: "PATIENT_V"
+    group: "PATIENT"
+    key_columns: ["PAT_ID", "PAT_EPI_ID", "MRN", "FIRST_NAME", "LAST_NAME", "DATE_OF_BIRTH", "VITAL_STATUS", "SEX_ASSIGNED_AT_BIRTH", "RACE", "ETHNICITY", "ECOG_PERFORMANCE_STATUS"]
+    data_transformation_rules: ["normalize_null_nan", "timestamp_to_date_only"]
+    # rule_based_data_validation:
+    #   VITAL_STATUS:
+    #     pattern: "^(Alive|Deceased)$"  # e.g., Alive, Deceased
+    #     pattern_regex_description: "Valid values are 'Alive' or 'Deceased'"
+    #     nullable: false # cannot be null
+    #   SEX_ASSIGNED_AT_BIRTH:
+    #     pattern: "^(Male|Female|Choose not to disclose|Uncertain|Unknown)$"  # e.g., Male, Female, Choose not to disclose, Uncertain or Unknown
+    #     pattern_regex_description: "Valid values are 'Male', 'Female', 'Choose not to disclose', 'Uncertain', or 'Unknown'"
+    #     nullable: true # can be null
+    #   RACE:
+    #     pattern: "^(Unavailable|Black|White|Multiracial/Multicultural|Hispanic/Latino|Middle Eastern or North African|Asian|Native Hawaiian/Pacific Islander|Other|American Indian/Alaska Native|Declined)$"
+    #     pattern_regex_description: "Allowed values: 'Unavailable', 'Black', 'White', 'Multiracial/Multicultural', 'Hispanic/Latino', 'Middle Eastern or North African', 'Asian', 'Native Hawaiian/Pacific Islander', 'Other', 'American Indian/Alaska Native', 'Declined'"
+    #     nullable: true # can be null
+    #   ETHNICITY:
+    #     pattern: "^(Unavailable|Not Hispanic|Hispanic|Declined|Caucasian)$"  # e.g., Hispanic, Not Hispanic, Unavailable, Declined, Caucasian
+    #     pattern_regex_description: "Valid values are 'Hispanic', 'Not Hispanic', 'Unavailable', 'Declined', 'Caucasian'"
+    #     nullable: true # can be null
+    #   ECOG_PERFORMANCE_STATUS:
+    #     pattern: "^(?:[0-5])$"
+    #     pattern_regex_description: "Valid values are 0, 1, 2, 3, 4, 5"
+    #     nullable: true # can be null
+    distribution_based_data_validation:
+      VITAL_STATUS:
+        expected_distribution:
+          "Alive":
+            min_count: 1
+            min_percent: 60.0
+            # max_count: 1000000
+            # max_percent: 100.0
+          "Deceased":
+            min_count: 1
+            min_percent: 20.0
+      # SEX_ASSIGNED_AT_BIRTH:
+      #   expected_distribution:
+      #     "Male":
+      #       min_count: 1
+      #       min_percent: 10.0
+      #     "Female":
+      #       min_count: 1
+      #       min_percent: 15.0
+      # RACE:
+      #   expected_distribution:
+      #     "Black":
+      #       min_count: 1
+      #       min_percent: 10.0
+      #     "White":
+      #       min_count: 1
+      #       min_percent: 70.0
+      #     "Asian":
+      #       min_count: 1
+      #       min_percent: 1.0
+      # ETHNICITY:
+      #   expected_distribution:
+      #     "Hispanic":
+      #       min_count: 1
+      #       min_percent: 3.0
+      #     "Not Hispanic":
+      #       min_count: 1
+      #       min_percent: 80.0
+      # ECOG_PERFORMANCE_STATUS:
+        # expected_distribution:
+        #   "0":
+        #     min_count: 1
+        #     min_percent: 15.0
+        #   "1":
+        #     min_count: 1
+        #     min_percent: 15.0
+        #   "2":
+        #     min_count: 1
+        #     min_percent: 5.0
+        #   "3":
+        #     min_count: 1
+        #     min_percent: 3.0
+        #   "4":
+        #     min_count: 1
+        #   "5":
+        #     min_count: 1
+
+# Validation Settings
+validation_settings:
+  output_dir: "database_validation_reports"
+
+  # Maximum number of parallel workers
+  max_workers: 2
+
+  # Sample size for data validation (null = all data)
+  sample_size: null
+
+  number_of_set_sample_records_for_detailed_report: 5
+
+  data_validation_threshold:
+    success: 99.0  # Threshold for success rate (percentage)
+    warning: 95.0  # Threshold for warning (percentage)
+
+  row_count_difference_threshold:
+    success: 1.0   # Threshold for success rate (percentage)
+    warning: 5.0   # Threshold for warning (percentage)
+
+  # Enable/disable specific validation types
+  enable_schema_validation: true
+  enable_row_count_validation: true
+
+  enable_data_validation: true
+
+  enable_data_match_validation: true
+  enable_rule_based_data_validation: true
+  enable_distribution_based_data_validation: true

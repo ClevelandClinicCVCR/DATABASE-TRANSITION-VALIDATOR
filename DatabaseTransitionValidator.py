@@ -1312,6 +1312,11 @@ class DatabaseTransitionValidator:
             expected_distribution = filtered_distributions[column_name].get(
                 "expected_distribution", {}
             )
+            # convert expected_distribution keys to lowercase for case insensitive comparison
+            expected_distribution = {
+                k.lower(): v for k, v in expected_distribution.items()
+            }
+
             for value, stats in column_result.items():
                 value_expected_distribution = expected_distribution.get(
                     value, {}

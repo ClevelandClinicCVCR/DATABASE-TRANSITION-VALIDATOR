@@ -10,7 +10,7 @@ database_setting:
 
   target_database:
     type: "MS_SQL_Server" # Teradata, MS_SQL_Server
-    name: "MS_SQL_Server_DEV"
+    name: "MS_SQL_Server_PROD" # MS_SQL_Server_PROD, MS_SQL_Server_DEV
     schema: "MAGIC_CORE" # MAGIC_CORE, PYTHIA_CORE, dbo (for MS_SQL_Server). DL_MAGIC_DEV, DL_MAGIC_PROD (for Teradata)
 
 table_mappings:
@@ -228,6 +228,11 @@ table_mappings:
         pattern: '^([A-Z ,]+)$' # AST
         pattern_regex_description: "Names with uppercase letters, spaces, and commas"
         nullable: false # cannot be null
+
+  - source_table: "PATIENT_LAB_RESULT_V"
+    group: "PATIENT_LAB_RESULT"
+    key_columns: ["PAT_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "PATIENT_PATHOLOGICAL_CANCER_STAGE"
     group: "PATIENT"
@@ -1408,6 +1413,14 @@ table_mappings:
         pattern_regex_description: "A positive integer without leading zeros, up to 10 digits."
         nullable: true # can be null
 
+  - source_table: "GENE"
+    key_columns: ["HUGO_SYMBOL"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "GENE"
+    key_columns: ["ENTREZ_ID"]
+    data_transformation_rules: ["normalize_null_nan"]
+
   - source_table: "MAGIC_ID_LOOKUP"
 
   - source_table: "PANEL"
@@ -1536,6 +1549,11 @@ table_mappings:
   - source_table: "SPECIMEN_V"
     group: "Specimen"
     key_columns: ["PAT_ID", "SPEC_NUMBER_LN1"]
+    data_transformation_rules: ["normalize_null_nan"]
+
+  - source_table: "SPECIMEN_V"
+    group: "Specimen"
+    key_columns: ["PAT_ID"]
     data_transformation_rules: ["normalize_null_nan"]
 
   - source_table: "STATE"
