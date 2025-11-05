@@ -79,6 +79,8 @@ table_mappings:
             min_count: 1
             min_percent: 20.0
             max_percent: 40.0
+          "null":
+            max_count: 0 # no nulls allowed
       SEX_ASSIGNED_AT_BIRTH:
         expected_distribution:
           "Male":
@@ -842,6 +844,7 @@ table_mappings:
     group: "NGS_IHC"
     key_columns: ["INTENSITY", "PERCENTAGE"]
     data_transformation_rules: ["normalize_null_nan"]
+    number_of_set_sample_records_for_detailed_report: 20
     rule_based_data_validation:
       INTENSITY:
         pattern: "^(0|1\\+|2\\+|3\\+)$"
