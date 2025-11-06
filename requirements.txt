@@ -25,4 +25,10 @@ pymssql>=2.2.8
 # If magic-models is a local path or VCS, replace the above line, e.g.:
 # git+ssh://git@github.com/your-org/magic-models.git@<commit_hash>
 
-cryptography>=41.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
+# not directly required, pinned by Snyk to avoid a vulnerability
+cryptography>=41.0.0
+snowflake-connector-python>=3.12.3
+zipp>=3.19.1
+urllib3>=2.5.0
+pyopenssl>=24.0.0
+requests>=2.32.2
