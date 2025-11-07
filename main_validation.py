@@ -60,7 +60,7 @@ def load_custom_table_mappings_and_setting(
                 f"Config file '{config_file}' not found in search paths: {search_paths}"
             )
 
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
             # print(f"Loaded configuration from {config_path}")
 

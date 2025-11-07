@@ -11,18 +11,29 @@ Phong Nguyen <nguyenp7@ccf.org>
 CREATE VIRTUAL ENVIRONMENT and VS CODE SETTINGS
 -----------------
 Creating the virtual environment in the workspace root
+On a Mac:
 ```
 python3 -m venv .venv
 ```
+Or on window: 
+```
+py -3.10 -m venv .venv
+```
 
 Activating the virtual environment and upgrading core packaging tools
+On Mac:
 ```
 source .venv/bin/activate && python -m pip install --upgrade pip setuptools wheel
+```
+On Window:
+```
+.venv\Scripts\activate 
+python -m pip install --upgrade pip
 ```
 
 Installing dependencies from the new consolidated requirements file
 ```
-source .venv/bin/activate && pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 VS Code Settings:

@@ -20,7 +20,7 @@ def load_default_validation_settings(
     """
     try:
         config_path = Path(__file__).parent / config_file
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         return config

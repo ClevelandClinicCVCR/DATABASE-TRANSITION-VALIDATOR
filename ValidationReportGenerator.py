@@ -21,7 +21,7 @@ class ValidationReportGenerator:
     def get_file_content(self, filename: str) -> str:
         """Read and return the content of a template file in the same directory as this script."""
         file_path = Path(__file__).parent / filename
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
 
     def __init__(self, settings: Dict[str, Any]):
@@ -170,7 +170,7 @@ class ValidationReportGenerator:
             }
             report_data["schema_validation_results"].append(schema_data)
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(report_data, f, indent=2, default=str)
 
         return str(filepath)
@@ -181,7 +181,7 @@ class ValidationReportGenerator:
         """Generate CSV report with table-level results."""
         filepath = self.output_dir / filename
 
-        with open(filepath, "w", newline="") as f:
+        with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
 
             # Write header
@@ -616,7 +616,7 @@ class ValidationReportGenerator:
             venn_diagram_html=venn_diagram_html,
         )
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(html_content)
 
         return str(filepath)
@@ -629,7 +629,7 @@ class ValidationReportGenerator:
 
         summary = result.summary_stats
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write("DATABASE TRANSITION VALIDATION SUMMARY\n")
             f.write("=" * 50 + "\n\n")
 

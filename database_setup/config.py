@@ -9,7 +9,7 @@ def get_yaml_config() -> dict:
     """Return a dict of the values from the config file."""
     config_file_path = Path(__file__).parent.parent / DATABASE_CREDENTIALS_FILE
 
-    with open(config_file_path, "r") as f:
+    with open(config_file_path, "r", encoding="utf-8") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     return config
