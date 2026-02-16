@@ -29,7 +29,7 @@ pymssql>=2.2.8
 # git+ssh://git@github.com/your-org/magic-models.git@<commit_hash>
 
 # not directly required, pinned by Snyk to avoid a vulnerability
-cryptography>=41.0.0
+cryptography>=46.0.5
 zipp>=3.19.1
 urllib3>=2.5.0
 pyopenssl>=24.0.0
